@@ -1,15 +1,13 @@
-
 import 'package:dio/dio.dart';
-import 'package:reminder/constants/main.dart';
+import 'package:reminder/Constants/main.dart';
 
 class DioUtils {
   final Dio _dio = Dio();
 
   DioUtils() {
     _dio.options.baseUrl = GlobalConstants.BASE_URL;
-    _dio.options.connectTimeout = Duration(seconds:GlobalConstants.TIME_OUT);
-    _dio.options.receiveTimeout = Duration(seconds:GlobalConstants.TIME_OUT);
-    _dio.options.connectTimeout = Duration(seconds:GlobalConstants.TIME_OUT);
+    _dio.options.connectTimeout = const Duration(seconds: GlobalConstants.TIME_OUT);
+    _dio.options.receiveTimeout = const Duration(seconds: GlobalConstants.TIME_OUT);
 
     _addInterceptor();
   }
@@ -28,7 +26,22 @@ class DioUtils {
     ));
   }
 
+  /// 发送普通 POST 请求
   Future<Response> post(String url, {Map<String, dynamic>? data}) async {
     return await _dio.post(url, data: data);
+  }
+
+  /// 发送二进制数据 POST 请求
+  Future<Response> postBinary(String url, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    return await _dio.post(
+      url,
+      data: data,
+      queryParameters: queryParameters,
+      options: options ?? Options(headers: {'Content-Type': 'application/octet-stream'}),
+    );
   }
 }
