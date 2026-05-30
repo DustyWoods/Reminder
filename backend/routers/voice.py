@@ -149,26 +149,36 @@ async def stop_voice_session(request: VoiceStreamEndRequest):
         logger.info(f"Voice session ended: {request.session_id}, recognized text: {final_text}")
 
         # 如果没有识别到文本，返回错误
-        if not final_text or final_text.strip() == "":
-            return {
-                "session_id": request.session_id,
-                "error": "No speech recognized",
-                "text": "",
-                "is_final": True
-            }
+        # if not final_text or final_text.strip() == "":
+        #     return {
+        #         "session_id": request.session_id,
+        #         "error": "No speech recognized",
+        #         "text": "",
+        #         "is_final": True
+        #     }
 
         # 使用 LLM 处理识别文本，提取任务信息
         try:
             if llm_service.is_available():
-                reminder = llm_service.extract_reminder(final_text)
+                # reminder = llm_service.extract_reminder(final_text)
+                # return {
+                #     "session_id": request.session_id,
+                #     "text": final_text,
+                #     "is_final": True,
+                #     "task": {
+                #         "title": reminder.title,
+                #         "due_date": reminder.due_date,
+                #         "description": reminder.description
+                #     }
+                # }
                 return {
                     "session_id": request.session_id,
                     "text": final_text,
                     "is_final": True,
                     "task": {
-                        "title": reminder.title,
-                        "due_date": reminder.due_date,
-                        "description": reminder.description
+                        "title": "测试任务",
+                        "due_date": "2022-12-12 12:00",
+                        "description": "这是一个测试任务"
                     }
                 }
             else:

@@ -8,7 +8,7 @@ class GlobalConstants {
 }
 
 class HttpConstants {
-  static const String TASK = '/api/reminder';
+  static const String TEXT_TASK = '/api/text';
   
   // 语音识别相关路由
   static const String VOICE_START = '/api/voice/start';

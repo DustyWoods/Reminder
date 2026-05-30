@@ -1,8 +1,8 @@
 
 import 'package:flutter/material.dart';
 
-class VoiceText extends StatelessWidget {
-  const VoiceText({super.key});
+class VoiceMask extends StatelessWidget {
+  const VoiceMask({super.key});
 
   @override
   Widget build(BuildContext context) {

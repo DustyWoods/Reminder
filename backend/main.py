@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 from config import settings
 from utils import setup_logging, get_logger
-from routers import reminder_router, voice_router
+from routers import text_router, voice_router
 from services import SHERPA_AVAILABLE
 
 # 加载环境变量
@@ -43,7 +43,7 @@ app = FastAPI(
 )
 
 # 注册路由
-app.include_router(reminder_router)
+app.include_router(text_router)
 app.include_router(voice_router)
 
 

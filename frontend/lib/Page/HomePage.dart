@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:reminder/Components/HomePage/Greet.dart';
 import 'package:reminder/Components/HomePage/TaskBar.dart';
 import 'package:reminder/Components/HomePage/VoiceInput.dart';
-import 'package:reminder/Components/HomePage/VoiceText.dart';
+import 'package:reminder/Components/HomePage/VoiceMask.dart';
 import 'package:reminder/Components/HomePage/Handling.dart';
 import 'package:reminder/Components/HomePage/SwitchButton.dart';
 import 'package:reminder/Components/HomePage/TextInput.dart';
@@ -36,7 +36,7 @@ class _HomePageState extends State<HomePage> {
   bool _isInitialized = false;
   
   // 当前输入模式：语音输入 / 文本输入
-  bool _inputFlag = GlobalConstants.VOICE_INPUT;
+  bool _inputFlag = GlobalConstants.TEXT_INPUT;
   
   // 任务列表
   List<Task> _tasks = [];
@@ -59,40 +59,49 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // 阻止键盘弹出时自动调整布局
+      resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: Stack(
           children: [
-            // 主内容区域
-            Container(
-              color: Colors.white,
-              alignment: Alignment.center,
-              child: Column(
-                children: [
-                  // 问候语区域
-                  SizedBox(
-                    height: ScreenSize.getHeight(context) * 0.15,
-                    child: Greet(),
-                  ),
-                  // 任务列表区域
-                  SizedBox(
-                    height : ScreenSize.getHeight(context) * 0.65,
-                    child: 
-                      _isInitialized ? 
-                        TaskBar(tasks: _tasks, onDelete: _handleDelete)
-                        : 
-                        const Center(child: CircularProgressIndicator()),
-                  ),
-                ],
+            // 主内容区域（固定高度，不随键盘移动）
+            SizedBox(
+              height: ScreenSize.getHeight(context) - 80,
+              child: Container(
+                color: Colors.white,
+                alignment: Alignment.center,
+                child: Column(
+                  children: [
+                    // 问候语区域
+                    SizedBox(
+                      height: ScreenSize.getHeight(context) * 0.15,
+                      child: Greet(),
+                    ),
+                    // 任务列表区域
+                    SizedBox(
+                      height : ScreenSize.getHeight(context) * 0.65,
+                      child: 
+                        _isInitialized ? 
+                          TaskBar(tasks: _tasks, onDelete: _handleDelete)
+                          : 
+                          const Center(child: CircularProgressIndicator()),
+                    ),
+                  ],
+                ),
               ),
             ),
-            _onVoiceInputing ? VoiceText() : Container(),
-            // 输入方式切换
-            _inputFlag == GlobalConstants.VOICE_INPUT ? 
+            _onVoiceInputing ? VoiceMask() : Container(),
+            
+            // 输入模式
+            _inputFlag == GlobalConstants.VOICE_INPUT ?
               VoiceInput(
-                onVoiceInputBegin: _onVoiceInputBegin, 
-                onVoiceInputEnd: _onVoiceInputEnd)
-                :
-                TextInput(),
+                onVoiceInputBegin: _onVoiceInputBegin,
+                onVoiceInputEnd: _onVoiceInputEnd,
+              ) :
+              TextInput(
+                onSendSuccess: _onTextSendSuccess,
+                onSendError: _onTextSendError,
+              ),
             
             // 语音/文本输入切换按钮
             SwitchButton(flag: _inputFlag, onTap: _onInputModeSwitch),
@@ -182,6 +191,26 @@ class _HomePageState extends State<HomePage> {
       print('Error processing task result: $error');
       setState(() => _isHandling = false);
     }
+  }
+
+  /// 文本发送成功回调
+  void _onTextSendSuccess(Map<String, dynamic> result) {
+    // 优先使用后端返回的任务数据
+    if (result.containsKey('task') && result['task'] != null) {
+      print(result);
+      _handleTaskResult(result['task']);
+      return;
+    }
+    
+    // 如果有错误
+    if (result.containsKey('error')) {
+      print('文本发送完成，但任务处理失败: ${result['error']}');
+    }
+  }
+
+  /// 文本发送失败回调
+  void _onTextSendError(String error) {
+    print('文本发送失败: $error');
   }
 
   /// 删除任务

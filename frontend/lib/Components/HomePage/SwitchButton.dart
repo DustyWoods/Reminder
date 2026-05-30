@@ -12,7 +12,7 @@ class SwitchButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      bottom: 20,
+      bottom: ScreenSize.getBottomInset(context) + 20,
       height: 60,
       width: 60,
       left: ScreenSize.getWidth(context) * 0.1,
