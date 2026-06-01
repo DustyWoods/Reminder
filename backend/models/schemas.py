@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, Field
 from datetime import datetime
 
 
@@ -39,3 +39,31 @@ class VoiceRecognitionResult(BaseModel):
     text: str
     is_final: bool = False
     error: str | None = None
+
+
+# ============== 用户认证相关模型 ==============
+
+class UserRegisterRequest(BaseModel):
+    """用户注册请求"""
+    username: str = Field(..., min_length=3, max_length=50)
+    password: str = Field(..., min_length=6, max_length=100)
+
+
+class UserLoginRequest(BaseModel):
+    """用户登录请求"""
+    username: str
+    password: str
+
+
+class UserResponse(BaseModel):
+    """用户响应"""
+    id: int
+    username: str
+
+
+class AuthResponse(BaseModel):
+    """认证响应"""
+    success: bool
+    message: str
+    user: UserResponse | None = None
+    token: str | None = None

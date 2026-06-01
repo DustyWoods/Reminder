@@ -6,14 +6,18 @@ import 'package:reminder/Components/HomePage/VoiceMask.dart';
 import 'package:reminder/Components/HomePage/Handling.dart';
 import 'package:reminder/Components/HomePage/SwitchButton.dart';
 import 'package:reminder/Components/HomePage/TextInput.dart';
+import 'package:reminder/Components/HomePage/LoginButton.dart';
+import 'package:reminder/Components/HomePage/HeadBar.dart';
 import 'package:reminder/Constants/main.dart';
 import 'package:reminder/Utils/ScreenSize.dart';
-import 'package:reminder/stores/TokenManager.dart';
+import 'package:reminder/Stores/TokenManager.dart';
+import 'package:reminder/Stores/LoginManager.dart';
 import 'package:reminder/Viewmodels/task.dart';
 
 /// 主页面组件
 /// 
 /// 负责管理整个应用的主界面状态，包括：
+/// - 登录状态检查
 /// - 任务列表显示
 /// - 语音/文本输入切换
 /// - 语音输入处理流程
@@ -35,6 +39,9 @@ class _HomePageState extends State<HomePage> {
   // 是否已初始化
   bool _isInitialized = false;
   
+  // 是否已登录
+  bool _isLoggedIn = false;
+  
   // 当前输入模式：语音输入 / 文本输入
   bool _inputFlag = GlobalConstants.TEXT_INPUT;
   
@@ -44,16 +51,37 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _initializeTokenManager();
+    _initializeApp();
   }
 
-  /// 初始化 TokenManager
-  Future<void> _initializeTokenManager() async {
-    await tokenManager.init();
-    _tasks = tokenManager.getTasks();
+  /// 初始化应用
+  Future<void> _initializeApp() async {
+    // 初始化登录管理器
+    await loginManager.init();
+    
+    // 检查登录状态
+    _isLoggedIn = loginManager.isLoggedIn();
+    
+    // 如果已登录，初始化任务管理器
+    if (_isLoggedIn) {
+      await tokenManager.init();
+      _tasks = tokenManager.getTasks();
+    }
+    
     if (mounted) {
       setState(() => _isInitialized = true);
     }
+  }
+
+  /// 登录成功回调
+  void _onLoginSuccess() {
+    setState(() {
+      _isLoggedIn = true;
+      _isInitialized = false;
+    });
+    
+    // 重新初始化任务管理器
+    _initializeApp();
   }
 
   @override
@@ -62,60 +90,84 @@ class _HomePageState extends State<HomePage> {
       // 阻止键盘弹出时自动调整布局
       resizeToAvoidBottomInset: false,
       body: SafeArea(
-        child: Stack(
-          children: [
-            // 主内容区域（固定高度，不随键盘移动）
-            SizedBox(
-              height: ScreenSize.getHeight(context) - 80,
-              child: Container(
-                color: Colors.white,
-                alignment: Alignment.center,
-                child: Column(
-                  children: [
-                    // 问候语区域
-                    SizedBox(
-                      height: ScreenSize.getHeight(context) * 0.15,
-                      child: Greet(),
-                    ),
-                    // 任务列表区域
-                    SizedBox(
-                      height : ScreenSize.getHeight(context) * 0.65,
-                      child: 
-                        _isInitialized ? 
-                          TaskBar(tasks: _tasks, onDelete: _handleDelete)
-                          : 
-                          const Center(child: CircularProgressIndicator()),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            _onVoiceInputing ? VoiceMask() : Container(),
-            
-            // 输入模式
-            _inputFlag == GlobalConstants.VOICE_INPUT ?
-              VoiceInput(
-                onVoiceInputBegin: _onVoiceInputBegin,
-                onVoiceInputEnd: _onVoiceInputEnd,
-              ) :
-              TextInput(
-                onSendSuccess: _onTextSendSuccess,
-                onSendError: _onTextSendError,
-              ),
-            
-            // 语音/文本输入切换按钮
-            SwitchButton(flag: _inputFlag, onTap: _onInputModeSwitch),
-            
-            // 任务处理中的加载遮罩
-            _isHandling ? Handling() : Container(),
-          ],
-        ),
+        child: _buildBody(context),
       )
     );
   }
 
-  // ============== 语音输入回调处理 ==============
+  /// 构建页面主体
+  Widget _buildBody(BuildContext context) {
+    // 未初始化时显示加载动画
+    if (!_isInitialized) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+    
+    // 未登录时显示登录按钮
+    if (!_isLoggedIn) {
+      return Container(
+        color: Colors.white,
+        child: LoginButton(onLoginSuccess: _onLoginSuccess),
+      );
+    }
+    
+    // 已登录时显示主界面
+    return Stack(
+      children: [
+        // 主内容区域（固定高度，不随键盘移动）
+        SizedBox(
+          height: ScreenSize.getHeight(context) - 80,
+          child: Container(
+            color: Colors.white,
+            alignment: Alignment.center,
+            child: Column(
+              children: [
+                SizedBox(
+                  height: 50,
+                  child: HeadBar(),
+                ),
+                // 问候语区域
+                SizedBox(
+                  height: ScreenSize.getHeight(context) * 0.15,
+                  child: Greet(),
+                ),
+                // 任务列表区域
+                SizedBox(
+                  height : ScreenSize.getHeight(context) * 0.65,
+                  child: 
+                    _isInitialized ? 
+                      TaskBar(tasks: _tasks, onDelete: _handleDelete)
+                      : 
+                      const Center(child: CircularProgressIndicator()),
+                ),
+              ],
+            ),
+          ),
+        ),
+        _onVoiceInputing ? VoiceMask() : Container(),
+        
+        // 输入模式
+        _inputFlag == GlobalConstants.VOICE_INPUT ?
+          VoiceInput(
+            onVoiceInputBegin: _onVoiceInputBegin,
+            onVoiceInputEnd: _onVoiceInputEnd,
+          ) :
+          TextInput(
+            onSendSuccess: _onTextSendSuccess,
+            onSendError: _onTextSendError,
+          ),
+        
+        // 语音/文本输入切换按钮
+        SwitchButton(flag: _inputFlag, onTap: _onInputModeSwitch),
+        
+        // 任务处理中的加载遮罩
+        _isHandling ? Handling() : Container(),
+      ],
+    );
+  }
 
+  // ============== 语音输入回调处理 ==============
 
   /// 语音输入开始
   void _onVoiceInputBegin() {
