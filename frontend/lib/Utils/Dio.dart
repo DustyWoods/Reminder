@@ -44,4 +44,9 @@ class DioUtils {
       options: options ?? Options(headers: {'Content-Type': 'application/octet-stream'}),
     );
   }
+
+  /// 发送 DELETE 请求
+  Future<Response> delete(String url, {Map<String, dynamic>? data}) async {
+    return await _dio.delete(url, data: data);
+  }
 }

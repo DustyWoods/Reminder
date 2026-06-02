@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:reminder/Utils/ScreenSize.dart';
 import 'package:reminder/stores/LoginManager.dart';
 import 'package:reminder/stores/TaskManager.dart';
+import 'package:reminder/api/AuthService.dart';
 
 class HeadBar extends StatelessWidget {
   final VoidCallback? onLogoutSuccess;
@@ -27,6 +28,16 @@ class HeadBar extends StatelessWidget {
             ],
           ),
           onTap: () => _showLogoutDialog(context),
+        ),
+        PopupMenuItem(
+          child: const Row(
+            children: [
+              Icon(Icons.delete, color: Colors.red, size: 20),
+              SizedBox(width: 10),
+              Text('注销账号', style: TextStyle(color: Colors.red)),
+            ],
+          ),
+          onTap: () => _showDeleteAccountDialog(context),
         ),
       ],
     );
@@ -54,6 +65,50 @@ class HeadBar extends StatelessWidget {
             },
             child: const Text(
               '确定',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteAccountDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('确认注销账号'),
+        content: const Text('此操作将永久删除您的账号和所有数据，且无法恢复。确定要继续吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+
+              if (!loginManager.isInitialized()) {
+                await loginManager.init();
+              }
+
+              final userId = loginManager.getUserId();
+              print('User ID: $userId');
+              if (userId != null) {
+                try {
+                  await AuthService.deleteUser(int.parse(userId));
+                } catch (e) {
+                  print('Delete account error: $e');
+                }
+              }
+              
+              await loginManager.logout();
+              await taskManager.clearTasks(userId);
+              
+              onLogoutSuccess?.call();
+            },
+            child: const Text(
+              '确定注销',
               style: TextStyle(color: Colors.red),
             ),
           ),

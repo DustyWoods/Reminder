@@ -10,6 +10,7 @@ from .database import (
     get_user_by_username,
     get_user_by_id,
     user_exists,
+    delete_user,
 )
 
 __all__ = [
@@ -26,4 +27,5 @@ __all__ = [
     "get_user_by_username",
     "get_user_by_id",
     "user_exists",
+    "delete_user",
 ]

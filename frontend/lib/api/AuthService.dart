@@ -26,4 +26,14 @@ class AuthService {
     );
     return response.data;
   }
+
+  static Future<Map<String, dynamic>> deleteUser(int userId) async {
+    Response response = await _dioUtils.delete(
+      HttpConstants.DELETE_USER,
+      data: {
+        'user_id': userId,
+      },
+    );
+    return response.data;
+  }
 }

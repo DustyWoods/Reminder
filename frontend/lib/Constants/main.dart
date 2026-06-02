@@ -17,4 +17,5 @@ class HttpConstants {
   
   static const String LOGIN = '/api/auth/login';
   static const String REGISTER = '/api/auth/register';
+  static const String DELETE_USER = '/api/auth/delete';
 }

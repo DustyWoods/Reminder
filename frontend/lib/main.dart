@@ -5,7 +5,11 @@ import 'package:reminder/Stores/LoginManager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  await loginManager.init();
   final userId = await loginManager.logout();
+  
+  await taskManager.init();
   await taskManager.clearTasks(userId);
   
   runApp(getRootWidget());

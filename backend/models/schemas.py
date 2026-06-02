@@ -55,6 +55,11 @@ class UserLoginRequest(BaseModel):
     password: str
 
 
+class UserDeleteRequest(BaseModel):
+    """用户删除请求"""
+    user_id: int
+
+
 class UserResponse(BaseModel):
     """用户响应"""
     id: int

@@ -6,6 +6,7 @@ from .schemas import (
     VoiceRecognitionResult,
     UserRegisterRequest,
     UserLoginRequest,
+    UserDeleteRequest,
     UserResponse,
     AuthResponse,
 )
@@ -18,6 +19,7 @@ __all__ = [
     "VoiceRecognitionResult",
     "UserRegisterRequest",
     "UserLoginRequest",
+    "UserDeleteRequest",
     "UserResponse",
     "AuthResponse",
 ]

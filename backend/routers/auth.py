@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from models import UserRegisterRequest, UserLoginRequest, AuthResponse, UserResponse
+from models import UserRegisterRequest, UserLoginRequest, UserDeleteRequest, AuthResponse, UserResponse
 from services import auth_service
 from utils import get_logger
 
@@ -50,4 +50,22 @@ async def login(request: UserLoginRequest) -> AuthResponse:
         success=True,
         message=message,
         user=UserResponse(id=user.id, username=user.username)
+    )
+
+
+@router.delete("/delete", response_model=AuthResponse)
+async def delete_user(request: UserDeleteRequest) -> AuthResponse:
+    logger.info(f"Delete user request for user_id: {request.user_id}")
+    
+    success, message = auth_service.delete_user(user_id=request.user_id)
+    
+    if not success:
+        logger.warning(f"Delete user failed: {message}")
+        return AuthResponse(success=False, message=message)
+    
+    logger.info(f"User deleted successfully: {request.user_id}")
+    
+    return AuthResponse(
+        success=True,
+        message=message
     )

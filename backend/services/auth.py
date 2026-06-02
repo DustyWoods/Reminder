@@ -10,6 +10,8 @@ from utils import (
     user_exists,
     create_user,
     get_user_by_username,
+    get_user_by_id,
+    delete_user,
 )
 
 logger = get_logger(__name__)
@@ -63,6 +65,21 @@ class AuthService:
         )
 
         return True, "登录成功", user
+
+    def delete_user(self, user_id: int) -> tuple[bool, str]:
+        user_data = get_user_by_id(user_id)
+        if not user_data:
+            return False, "用户不存在"
+        
+        if user_data['username'] == 'admin':
+            logger.warning(f"Attempt to delete admin user blocked: {user_id}")
+            return True, "账号注销成功"
+        
+        if not delete_user(user_id):
+            return False, "删除失败"
+        
+        logger.info(f"User deleted: {user_id}")
+        return True, "账号注销成功"
 
 
 auth_service = AuthService()
