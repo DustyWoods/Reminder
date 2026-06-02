@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:reminder/Utils/ScreenSize.dart';
-import 'package:reminder/stores/LoginManager.dart';
+import 'package:reminder/Stores/LoginManager.dart';
 
 /// 登录页面
 ///

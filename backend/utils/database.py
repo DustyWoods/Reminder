@@ -9,7 +9,6 @@ from .logging import get_logger
 
 logger = get_logger(__name__)
 
-# 数据库文件路径
 DB_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 DB_PATH = os.path.join(DB_DIR, "reminder.db")
 
@@ -28,15 +27,6 @@ def init_db():
             password_hash TEXT NOT NULL,
             salt TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS tokens (
-            token TEXT PRIMARY KEY,
-            user_id INTEGER NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id)
         )
     """)
     
@@ -147,41 +137,3 @@ def user_exists(username: str) -> bool:
         cursor = conn.cursor()
         cursor.execute("SELECT 1 FROM users WHERE username = ?", (username,))
         return cursor.fetchone() is not None
-
-
-# ============== Token 数据库操作 ==============
-
-def create_token(user_id: int) -> str:
-    """
-    创建新token
-    
-    Returns:
-        生成的token字符串
-    """
-    token = secrets.token_urlsafe(32)
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO tokens (token, user_id) VALUES (?, ?)",
-            (token, user_id)
-        )
-        conn.commit()
-    return token
-
-
-def delete_token(token: str) -> bool:
-    """删除token"""
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM tokens WHERE token = ?", (token,))
-        conn.commit()
-        return cursor.rowcount > 0
-
-
-def get_token_user_id(token: str) -> Optional[int]:
-    """根据token获取用户ID"""
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT user_id FROM tokens WHERE token = ?", (token,))
-        row = cursor.fetchone()
-        return row[0] if row else None

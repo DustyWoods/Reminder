@@ -62,8 +62,6 @@ class UserResponse(BaseModel):
 
 
 class AuthResponse(BaseModel):
-    """认证响应"""
     success: bool
     message: str
     user: UserResponse | None = None
-    token: str | None = None

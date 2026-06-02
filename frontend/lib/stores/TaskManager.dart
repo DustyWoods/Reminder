@@ -1,11 +1,16 @@
-
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:reminder/Constants/main.dart';
 import 'package:reminder/Viewmodels/task.dart';
+import 'package:reminder/Stores/LoginManager.dart';
 
-class TokenManager {
+class TaskManager {
   List<Task> _tasks = [];
+  
+  String _getUserTasksKey([String? userId]) {
+    final effectiveUserId = userId ?? loginManager.getUserId() ?? 'default';
+    return '${GlobalConstants.TASKS_KEY}_$effectiveUserId';
+  }
 
   Future<SharedPreferences> _getInstance() async {
     return await SharedPreferences.getInstance();
@@ -14,11 +19,11 @@ class TokenManager {
   Future<void> init() async {
     final prefs = await _getInstance();
     
-    final taskCount = prefs.getInt('${GlobalConstants.TASKS_KEY}_count') ?? 0;
+    final taskCount = prefs.getInt('${_getUserTasksKey()}_count') ?? 0;
     if (taskCount > 0) {
       _tasks = [];
       for (int i = 0; i < taskCount; i++) {
-        final taskJson = prefs.getString('${GlobalConstants.TASKS_KEY}_$i');
+        final taskJson = prefs.getString('${_getUserTasksKey()}_$i');
         if (taskJson != null) {
           final Map<String, dynamic> decoded = jsonDecode(taskJson);
           _tasks.add(Task.fromJson(decoded));
@@ -35,8 +40,8 @@ class TokenManager {
       'dueDate': task.dueDate,
       'isCompleted': task.isCompleted,
     });
-    await prefs.setString('${GlobalConstants.TASKS_KEY}_$index', taskJson);
-    await prefs.setInt('${GlobalConstants.TASKS_KEY}_count', _tasks.length);
+    await prefs.setString('${_getUserTasksKey()}_$index', taskJson);
+    await prefs.setInt('${_getUserTasksKey()}_count', _tasks.length);
   }
 
   List<Task> getTasks() {
@@ -59,7 +64,7 @@ class TokenManager {
     if (index >= 0 && index < _tasks.length) {
       _tasks.removeAt(index);
       final prefs = await _getInstance();
-      await prefs.setInt('${GlobalConstants.TASKS_KEY}_count', _tasks.length);
+      await prefs.setInt('${_getUserTasksKey()}_count', _tasks.length);
       for (int i = index; i < _tasks.length; i++) {
         final taskJson = jsonEncode({
           'title': _tasks[i].title,
@@ -67,22 +72,23 @@ class TokenManager {
           'dueDate': _tasks[i].dueDate,
           'isCompleted': _tasks[i].isCompleted,
         });
-        await prefs.setString('${GlobalConstants.TASKS_KEY}_$i', taskJson);
+        await prefs.setString('${_getUserTasksKey()}_$i', taskJson);
       }
-      await prefs.remove('${GlobalConstants.TASKS_KEY}_${_tasks.length}');
+      await prefs.remove('${_getUserTasksKey()}_${_tasks.length}');
     }
   }
 
-  Future<void> removeToken() async {
+  Future<void> clearTasks([String? userId]) async {
     final prefs = await _getInstance();
-    final count = prefs.getInt('${GlobalConstants.TASKS_KEY}_count') ?? 0;
+    final userTasksKey = _getUserTasksKey(userId);
+    final count = prefs.getInt('${userTasksKey}_count') ?? 0;
     for (int i = 0; i < count; i++) {
-      await prefs.remove('${GlobalConstants.TASKS_KEY}_$i');
+      await prefs.remove('${userTasksKey}_$i');
     }
-    await prefs.remove('${GlobalConstants.TASKS_KEY}_count');
-    await prefs.remove(GlobalConstants.TASKS_KEY);
+    await prefs.remove('${userTasksKey}_count');
+    await prefs.remove(userTasksKey);
     _tasks = [];
   }
 }
 
-final tokenManager = TokenManager();
+final taskManager = TaskManager();

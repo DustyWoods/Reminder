@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:reminder/Route/main.dart';
-import 'package:reminder/stores/TokenManager.dart';
-import 'package:reminder/stores/LoginManager.dart';
+import 'package:reminder/Stores/TaskManager.dart';
+import 'package:reminder/Stores/LoginManager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await tokenManager.removeToken();
-  await loginManager.logout();
+  final userId = await loginManager.logout();
+  await taskManager.clearTasks(userId);
   
   runApp(getRootWidget());
 }
-

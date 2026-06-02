@@ -10,7 +10,7 @@ import 'package:reminder/Components/HomePage/LoginButton.dart';
 import 'package:reminder/Components/HomePage/HeadBar.dart';
 import 'package:reminder/Constants/main.dart';
 import 'package:reminder/Utils/ScreenSize.dart';
-import 'package:reminder/Stores/TokenManager.dart';
+import 'package:reminder/Stores/TaskManager.dart';
 import 'package:reminder/Stores/LoginManager.dart';
 import 'package:reminder/Viewmodels/task.dart';
 
@@ -64,8 +64,8 @@ class _HomePageState extends State<HomePage> {
     
     // 如果已登录，初始化任务管理器
     if (_isLoggedIn) {
-      await tokenManager.init();
-      _tasks = tokenManager.getTasks();
+      await taskManager.init();
+      _tasks = taskManager.getTasks();
     }
     
     if (mounted) {
@@ -80,9 +80,18 @@ class _HomePageState extends State<HomePage> {
       _isInitialized = false;
     });
     
-    // 重新初始化任务管理器
     _initializeApp();
   }
+
+  /// 退出登录成功回调
+  void _onLogoutSuccess() {
+    setState(() {
+      _isLoggedIn = false;
+      _tasks = [];
+    });
+  }
+
+  
 
   @override
   Widget build(BuildContext context) {
@@ -125,7 +134,7 @@ class _HomePageState extends State<HomePage> {
               children: [
                 SizedBox(
                   height: 50,
-                  child: HeadBar(),
+                  child: HeadBar(onLogoutSuccess: _onLogoutSuccess),
                 ),
                 // 问候语区域
                 SizedBox(
@@ -230,9 +239,9 @@ class _HomePageState extends State<HomePage> {
       );
       
       // 保存任务
-      tokenManager.addTask(task).then((_) {
+      taskManager.addTask(task).then((_) {
         setState(() {
-          _tasks = tokenManager.getTasks();
+          _tasks = taskManager.getTasks();
           _isHandling = false;
         });
       }).catchError((error) {
@@ -267,9 +276,9 @@ class _HomePageState extends State<HomePage> {
 
   /// 删除任务
   void _handleDelete(int index) {
-    tokenManager.removeTask(index).then((_) {
+    taskManager.removeTask(index).then((_) {
       setState(() {
-        _tasks = tokenManager.getTasks();
+        _tasks = taskManager.getTasks();
       });
     });
   }
