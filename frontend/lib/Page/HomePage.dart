@@ -41,7 +41,7 @@ class _HomePageState extends State<HomePage> {
   bool _isLoggedIn = false;
   
   // 当前输入模式：语音输入 / 文本输入
-  bool _inputFlag = GlobalConstants.TEXT_INPUT;
+  bool _inputFlag = HomePageConstants.TEXT_INPUT;
   
   // 任务列表
   List<Task> _tasks = [];
@@ -128,7 +128,7 @@ class _HomePageState extends State<HomePage> {
         _onVoiceInputing ? const VoiceMask() : Container(),
 
         // 输入模式
-        _inputFlag == GlobalConstants.VOICE_INPUT
+        _inputFlag == HomePageConstants.VOICE_INPUT
           ? VoiceInput(
               onVoiceInputBegin: _onVoiceInputBegin,
               onVoiceInputEnd: _onVoiceInputEnd,
