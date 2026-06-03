@@ -93,7 +93,6 @@ class HeadBar extends StatelessWidget {
               }
 
               final userId = loginManager.getUserId();
-              print('User ID: $userId');
               if (userId != null) {
                 try {
                   await AuthService.deleteUser(int.parse(userId));
@@ -133,12 +132,15 @@ class HeadBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Container(
-            margin: const EdgeInsets.only(left: 20),
-            child: const Icon(
-              Icons.calendar_month,
-              color: Color.fromARGB(255, 29, 99, 204),
-              size: 40,
+          GestureDetector(
+            onTap: () => Navigator.pushNamed(context, '/calendar'),
+            child: Container(
+              margin: const EdgeInsets.only(left: 20),
+              child: const Icon(
+                Icons.calendar_month,
+                color: Color.fromARGB(255, 29, 99, 204),
+                size: 40,
+              ),
             ),
           ),
           GestureDetector(
