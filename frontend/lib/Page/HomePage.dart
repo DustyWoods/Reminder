@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:reminder/Components/HomePage/Greet.dart';
-import 'package:reminder/Components/HomePage/TaskBar.dart';
+import 'package:reminder/Components/HomePage/MainContent.dart';
+import 'package:reminder/Components/HomePage/LoadingView.dart';
+import 'package:reminder/Components/HomePage/UnauthenticatedView.dart';
 import 'package:reminder/Components/HomePage/VoiceInput.dart';
 import 'package:reminder/Components/HomePage/VoiceMask.dart';
 import 'package:reminder/Components/HomePage/Handling.dart';
 import 'package:reminder/Components/HomePage/SwitchButton.dart';
 import 'package:reminder/Components/HomePage/TextInput.dart';
-import 'package:reminder/Components/HomePage/LoginButton.dart';
-import 'package:reminder/Components/HomePage/HeadBar.dart';
 import 'package:reminder/Constants/main.dart';
-import 'package:reminder/Utils/ScreenSize.dart';
 import 'package:reminder/Stores/TaskManager.dart';
 import 'package:reminder/Stores/LoginManager.dart';
 import 'package:reminder/Viewmodels/task.dart';
@@ -108,70 +106,43 @@ class _HomePageState extends State<HomePage> {
   Widget _buildBody(BuildContext context) {
     // 未初始化时显示加载动画
     if (!_isInitialized) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const LoadingView();
     }
-    
+
     // 未登录时显示登录按钮
     if (!_isLoggedIn) {
-      return Container(
-        color: Colors.white,
-        child: LoginButton(onLoginSuccess: _onLoginSuccess),
-      );
+      return UnauthenticatedView(onLoginSuccess: _onLoginSuccess);
     }
-    
+
     // 已登录时显示主界面
     return Stack(
       children: [
-        // 主内容区域（固定高度，不随键盘移动）
-        SizedBox(
-          height: ScreenSize.getHeight(context) - 80,
-          child: Container(
-            color: Colors.white,
-            alignment: Alignment.center,
-            child: Column(
-              children: [
-                SizedBox(
-                  height: 50,
-                  child: HeadBar(onLogoutSuccess: _onLogoutSuccess),
-                ),
-                // 问候语区域
-                SizedBox(
-                  height: ScreenSize.getHeight(context) * 0.15,
-                  child: Greet(),
-                ),
-                // 任务列表区域
-                SizedBox(
-                  height : ScreenSize.getHeight(context) * 0.65,
-                  child: 
-                    _isInitialized ? 
-                      TaskBar(tasks: _tasks, onDelete: _handleDelete)
-                      : 
-                      const Center(child: CircularProgressIndicator()),
-                ),
-              ],
-            ),
-          ),
+        // 主内容区域
+        MainContent(
+          onLogoutSuccess: _onLogoutSuccess,
+          isInitialized: _isInitialized,
+          tasks: _tasks,
+          onDelete: _handleDelete,
         ),
-        _onVoiceInputing ? VoiceMask() : Container(),
-        
+
+        _onVoiceInputing ? const VoiceMask() : Container(),
+
         // 输入模式
-        _inputFlag == GlobalConstants.VOICE_INPUT ?
-          VoiceInput(
-            onVoiceInputBegin: _onVoiceInputBegin,
-            onVoiceInputEnd: _onVoiceInputEnd,
-          ) :
-          TextInput(
-            onSendSuccess: _onTextSendSuccess,
-            onSendError: _onTextSendError,
-          ),
-        
+        _inputFlag == GlobalConstants.VOICE_INPUT
+          ? VoiceInput(
+              onVoiceInputBegin: _onVoiceInputBegin,
+              onVoiceInputEnd: _onVoiceInputEnd,
+            )
+          : TextInput(
+              onSendSuccess: _onTextSendSuccess,
+              onSendError: _onTextSendError,
+            ),
+
         // 语音/文本输入切换按钮
         SwitchButton(flag: _inputFlag, onTap: _onInputModeSwitch),
-        
+
         // 任务处理中的加载遮罩
-        _isHandling ? Handling() : Container(),
+        _isHandling ? const Handling() : Container(),
       ],
     );
   }

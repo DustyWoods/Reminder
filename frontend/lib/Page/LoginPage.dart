@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:reminder/Utils/ScreenSize.dart';
 import 'package:reminder/Stores/LoginManager.dart';
+import 'package:reminder/Components/LoginPage/LogoSection.dart';
+import 'package:reminder/Components/LoginPage/UsernameInput.dart';
+import 'package:reminder/Components/LoginPage/PasswordInput.dart';
+import 'package:reminder/Components/LoginPage/LoginButton.dart';
+import 'package:reminder/Components/LoginPage/RegisterLink.dart';
 
 /// 登录页面
 ///
@@ -119,118 +123,42 @@ class _LoginPageState extends State<LoginPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Logo 区域
-              SizedBox(
-                height: ScreenSize.getHeight(context) * 0.2,
-                child: Center(
-                  child: Icon(
-                    Icons.task_alt,
-                    size: 80,
-                    color: const Color.fromARGB(255, 47, 98, 209),
-                  ),
-                ),
-              ),
+              const LogoSection(),
               
               const SizedBox(height: 40),
               
               // 用户名输入框
-              TextField(
+              UsernameInput(
                 controller: _usernameController,
                 focusNode: _usernameFocus,
                 enabled: !_isLoggingIn,
-                decoration: InputDecoration(
-                  labelText: '用户名',
-                  hintText: '请输入用户名',
-                  prefixIcon: const Icon(Icons.person),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey.withValues(alpha: 0.1),
-                ),
-                textInputAction: TextInputAction.next,
-                onSubmitted: (_) => _passwordFocus.requestFocus(),
+                nextFocusNode: _passwordFocus,
               ),
               
               const SizedBox(height: 20),
               
               // 密码输入框
-              TextField(
+              PasswordInput(
                 controller: _passwordController,
                 focusNode: _passwordFocus,
                 enabled: !_isLoggingIn,
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: '密码',
-                  hintText: '请输入密码',
-                  prefixIcon: const Icon(Icons.lock),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey.withValues(alpha: 0.1),
-                ),
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) => _handleLogin(),
+                onSubmitted: _handleLogin,
               ),
               
               const SizedBox(height: 40),
               
               // 登录按钮
-              SizedBox(
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _isLoggingIn ? null : _handleLogin,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color.fromARGB(255, 47, 98, 209),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 2,
-                  ),
-                  child: _isLoggingIn
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : const Text(
-                        '登录',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                ),
+              LoginButton(
+                isLoading: _isLoggingIn,
+                onPressed: _handleLogin,
               ),
               
               const SizedBox(height: 20),
               
               // 注册入口
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    '还没有账号？',
-                    style: TextStyle(
-                      color: Colors.grey.withValues(alpha: 0.7),
-                      fontSize: 14,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: _isLoggingIn ? null : _navigateToRegister,
-                    child: const Text(
-                      '立即注册',
-                      style: TextStyle(
-                        color: Color.fromARGB(255, 47, 98, 209),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
+              RegisterLink(
+                enabled: !_isLoggingIn,
+                onPressed: _navigateToRegister,
               ),
             ],
           ),

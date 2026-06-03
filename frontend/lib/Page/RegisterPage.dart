@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:reminder/Utils/ScreenSize.dart';
 import 'package:reminder/Stores/LoginManager.dart';
+import 'package:reminder/Components/RegisterPage/LogoSection.dart';
+import 'package:reminder/Components/RegisterPage/TitleSection.dart';
+import 'package:reminder/Components/RegisterPage/UsernameInput.dart';
+import 'package:reminder/Components/RegisterPage/PasswordInput.dart';
+import 'package:reminder/Components/RegisterPage/ConfirmPasswordInput.dart';
+import 'package:reminder/Components/RegisterPage/RegisterButton.dart';
+import 'package:reminder/Components/RegisterPage/LoginLink.dart';
 
 /// 注册页面
 ///
@@ -131,154 +137,57 @@ class _RegisterPageState extends State<RegisterPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Logo 区域
-              SizedBox(
-                height: ScreenSize.getHeight(context) * 0.15,
-                child: Center(
-                  child: Icon(
-                    Icons.task_alt,
-                    size: 80,
-                    color: const Color.fromARGB(255, 47, 98, 209),
-                  ),
-                ),
-              ),
+              const LogoSection(),
               
               const SizedBox(height: 20),
               
               // 标题
-              const Center(
-                child: Text(
-                  '创建新账号',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
+              const TitleSection(),
               
               const SizedBox(height: 30),
               
               // 用户名输入框
-              TextField(
+              UsernameInput(
                 controller: _usernameController,
                 focusNode: _usernameFocus,
                 enabled: !_isRegistering,
-                decoration: InputDecoration(
-                  labelText: '用户名',
-                  hintText: '请输入用户名（至少3位）',
-                  prefixIcon: const Icon(Icons.person),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey.withValues(alpha: 0.1),
-                ),
-                textInputAction: TextInputAction.next,
-                onSubmitted: (_) => _passwordFocus.requestFocus(),
+                nextFocusNode: _passwordFocus,
               ),
               
               const SizedBox(height: 20),
               
               // 密码输入框
-              TextField(
+              PasswordInput(
                 controller: _passwordController,
                 focusNode: _passwordFocus,
                 enabled: !_isRegistering,
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: '密码',
-                  hintText: '请输入密码（至少6位）',
-                  prefixIcon: const Icon(Icons.lock),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey.withValues(alpha: 0.1),
-                ),
-                textInputAction: TextInputAction.next,
-                onSubmitted: (_) => _confirmPasswordFocus.requestFocus(),
+                nextFocusNode: _confirmPasswordFocus,
               ),
               
               const SizedBox(height: 20),
               
               // 确认密码输入框
-              TextField(
+              ConfirmPasswordInput(
                 controller: _confirmPasswordController,
                 focusNode: _confirmPasswordFocus,
                 enabled: !_isRegistering,
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: '确认密码',
-                  hintText: '请再次输入密码',
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey.withValues(alpha: 0.1),
-                ),
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) => _handleRegister(),
+                onSubmitted: _handleRegister,
               ),
               
               const SizedBox(height: 40),
               
               // 注册按钮
-              SizedBox(
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _isRegistering ? null : _handleRegister,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color.fromARGB(255, 47, 98, 209),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 2,
-                  ),
-                  child: _isRegistering
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : const Text(
-                        '注册',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                ),
+              RegisterButton(
+                isLoading: _isRegistering,
+                onPressed: _handleRegister,
               ),
               
               const SizedBox(height: 20),
               
               // 返回登录提示
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    '已有账号？',
-                    style: TextStyle(
-                      color: Colors.grey.withValues(alpha: 0.7),
-                      fontSize: 14,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: _isRegistering ? null : () => Navigator.pop(context),
-                    child: const Text(
-                      '返回登录',
-                      style: TextStyle(
-                        color: Color.fromARGB(255, 47, 98, 209),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
+              LoginLink(
+                enabled: !_isRegistering,
+                onPressed: () => Navigator.pop(context),
               ),
             ],
           ),
