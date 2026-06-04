@@ -27,13 +27,13 @@ class SwitchButton extends StatelessWidget {
             width: 50,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: flag == GlobalConstants.VOICE_INPUT ? Colors.white: const Color.fromARGB(255, 47, 98, 209),
+              color: flag == HomePageConstants.VOICE_INPUT ? Colors.white: const Color.fromARGB(255, 47, 98, 209),
               borderRadius: BorderRadius.circular(25),
             ),
             child: Icon(
-              flag == GlobalConstants.VOICE_INPUT ? Icons.keyboard: Icons.mic,
+              flag == HomePageConstants.VOICE_INPUT ? Icons.keyboard: Icons.mic,
               size: 28,
-              color: flag == GlobalConstants.VOICE_INPUT ? Colors.grey: Colors.white,
+              color: flag == HomePageConstants.VOICE_INPUT ? Colors.grey: Colors.white,
             ),
           ),
         ),
