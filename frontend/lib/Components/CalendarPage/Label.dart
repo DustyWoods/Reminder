@@ -40,14 +40,15 @@ class _LabelState extends State<Label> {
   @override
   Widget build(BuildContext context) {
     return Container(
+      height: widget.height,
       color: Colors.transparent,
       padding: EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           Container(
-            height: widget.height * 0.8,
-            width: widget.height * 0.8,
+            height: widget.height * 0.7,
+            width: widget.height * 0.7,
             decoration: BoxDecoration(
               color: const Color.fromARGB(255, 105, 134, 197),
               borderRadius: BorderRadius.circular(10),
@@ -66,7 +67,7 @@ class _LabelState extends State<Label> {
             ),
             child: Icon(
               Icons.event_note,
-              size: widget.height * 0.7,
+              size: widget.height * 0.6,
               color: Colors.white,
             ),
           ),

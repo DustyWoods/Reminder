@@ -9,6 +9,13 @@ class HomePageConstants {
   static const bool TEXT_INPUT = false;
 }
 
+enum calendarView {
+  year,
+  month,
+  day,
+  schedule,
+}
+
 class HttpConstants {
   static const String TEXT_TASK = '/api/text';
   
