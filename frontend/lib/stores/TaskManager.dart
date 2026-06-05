@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:reminder/Constants/main.dart';
 import 'package:reminder/Viewmodels/task.dart';
 import 'package:reminder/Stores/LoginManager.dart';
+import 'package:reminder/api/TaskService.dart';
 
 class TaskManager {
   List<Task> _tasks = [];
@@ -39,12 +40,7 @@ class TaskManager {
   Future<void> _saveSingleTask(int index, Task task) async {
     if (!_isInitialized) await init();
     
-    final taskJson = jsonEncode({
-      'title': task.title,
-      'description': task.description,
-      'dueDate': task.dueDate,
-      'isCompleted': task.isCompleted,
-    });
+    final taskJson = jsonEncode(task.toJson());
     await _prefs.setString('${_getUserTasksKey()}_$index', taskJson);
     await _prefs.setInt('${_getUserTasksKey()}_count', _tasks.length);
   }
@@ -73,19 +69,29 @@ class TaskManager {
     if (!_isInitialized) await init();
     
     if (index >= 0 && index < _tasks.length) {
+      final task = _tasks[index];
+      
+      if (loginManager.isLoggedIn()) {
+        final userId = loginManager.getUserId();
+        if (userId != null && task.id != null) {
+          _deleteTaskInBackground(int.parse(userId), task.id!);
+        }
+      }
+      
       _tasks.removeAt(index);
       await _prefs.setInt('${_getUserTasksKey()}_count', _tasks.length);
       for (int i = index; i < _tasks.length; i++) {
-        final taskJson = jsonEncode({
-          'title': _tasks[i].title,
-          'description': _tasks[i].description,
-          'dueDate': _tasks[i].dueDate,
-          'isCompleted': _tasks[i].isCompleted,
-        });
+        final taskJson = jsonEncode(_tasks[i].toJson());
         await _prefs.setString('${_getUserTasksKey()}_$i', taskJson);
       }
       await _prefs.remove('${_getUserTasksKey()}_${_tasks.length}');
     }
+  }
+  
+  void _deleteTaskInBackground(int userId, int taskId) {
+    TaskService.deleteTask(userId, taskId).catchError((e) {
+      print('Error deleting task from server: $e');
+    });
   }
 
   Future<void> clearTasks([String? userId]) async {
