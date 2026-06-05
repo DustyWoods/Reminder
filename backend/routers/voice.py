@@ -8,7 +8,8 @@ from models import (
     VoiceStreamEndRequest,
     ReminderResponse,
 )
-from services import asr_manager, SHERPA_AVAILABLE, llm_service
+from services import asr_manager, SHERPA_AVAILABLE
+from agent import get_task_agent
 from utils import get_logger, create_task
 
 logger = get_logger(__name__)
@@ -148,10 +149,11 @@ async def stop_voice_session(request: VoiceStreamEndRequest, user_id: int):
 
         logger.info(f"Voice session ended: {request.session_id}, recognized text: {final_text}")
 
-        # 使用 LLM 处理识别文本，提取任务信息
+        # 使用 Task Agent 处理识别文本，提取任务信息
         try:
-            if llm_service.is_available():
-                reminder = llm_service.extract_reminder(final_text)
+            task_agent = get_task_agent()
+            if task_agent.is_available():
+                reminder = task_agent.invoke(final_text)
                 
                 # 保存任务到数据库
                 task_id = create_task(

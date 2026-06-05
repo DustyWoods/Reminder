@@ -12,7 +12,11 @@ httpcore==1.0.9
 httpx==0.28.1
 idna==3.17
 jiter==0.15.0
-numpy==2.4.6
+langchain==0.2.14
+langchain-openai==0.1.22
+langgraph==0.2.15
+langgraph-checkpoint==2.0.1
+numpy>=1.26.0,<2.0.0
 openai==2.38.0
 packaging==26.0
 pydantic==2.13.4
