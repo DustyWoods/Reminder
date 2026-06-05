@@ -11,6 +11,12 @@ from .database import (
     get_user_by_id,
     user_exists,
     delete_user,
+    create_task,
+    get_tasks_by_user_id,
+    get_task_by_id,
+    update_task,
+    delete_task,
+    delete_all_tasks,
 )
 
 __all__ = [
@@ -28,4 +34,10 @@ __all__ = [
     "get_user_by_id",
     "user_exists",
     "delete_user",
+    "create_task",
+    "get_tasks_by_user_id",
+    "get_task_by_id",
+    "update_task",
+    "delete_task",
+    "delete_all_tasks",
 ]

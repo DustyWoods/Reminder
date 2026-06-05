@@ -27,8 +27,8 @@ class DioUtils {
   }
 
   /// 发送普通 POST 请求
-  Future<Response> post(String url, {Map<String, dynamic>? data}) async {
-    return await _dio.post(url, data: data);
+  Future<Response> post(String url, {Map<String, dynamic>? data, Map<String, dynamic>? queryParameters}) async {
+    return await _dio.post(url, data: data, queryParameters: queryParameters);
   }
 
   /// 发送二进制数据 POST 请求

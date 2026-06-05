@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:typed_data';
-import 'package:dio/dio.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
 

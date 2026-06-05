@@ -9,6 +9,11 @@ from .schemas import (
     UserDeleteRequest,
     UserResponse,
     AuthResponse,
+    TaskCreateRequest,
+    TaskUpdateRequest,
+    TaskDeleteRequest,
+    TaskResponse,
+    TaskListResponse,
 )
 
 __all__ = [
@@ -22,4 +27,9 @@ __all__ = [
     "UserDeleteRequest",
     "UserResponse",
     "AuthResponse",
+    "TaskCreateRequest",
+    "TaskUpdateRequest",
+    "TaskDeleteRequest",
+    "TaskResponse",
+    "TaskListResponse",
 ]

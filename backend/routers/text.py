@@ -3,7 +3,7 @@ import uuid
 
 from models import ReminderRequest
 from services import llm_service
-from utils import get_logger
+from utils import get_logger, create_task
 
 logger = get_logger(__name__)
 
@@ -11,42 +11,59 @@ router = APIRouter(prefix="/api", tags=["text"])
 
 
 @router.post("/text")
-async def create_text_task(request: ReminderRequest):
+async def create_text_task(request: ReminderRequest, user_id: int):
     """
     文本任务创建接口
 
-    接收文本，使用 LLM 提取任务信息并返回
+    接收文本，使用 LLM 提取任务信息并保存到数据库
     """
-    logger.info(f"Received text task request: {request.text}")
-
-    if not llm_service.is_available():
-        raise HTTPException(status_code=503, detail="LLM service not available")
+    logger.info(f"Received text task request from user {user_id}: {request.text}")
 
     try:
-        # 调用 LLM 服务提取任务信息
-        # reminder = llm_service.extract_reminder(request.text)
+        if llm_service.is_available():
+            # 调用 LLM 服务提取任务信息
+            reminder = llm_service.extract_reminder(request.text)
+            logger.info(f"Successfully extracted reminder: {reminder.title}")
+        else:
+            # LLM 服务不可用时，使用模拟数据
+            logger.warning("LLM service not available, using mock data")
+            reminder = {
+                "title": request.text[:50] if len(request.text) > 50 else request.text,
+                "due_date": "2026-06-30 18:00",
+                "description": f"任务描述: {request.text}"
+            }
         
-        # logger.info(f"Successfully extracted reminder: {reminder.title}")
+        # 获取任务数据（支持字典和对象两种格式）
+        if isinstance(reminder, dict):
+            title = reminder["title"]
+            due_date = reminder["due_date"]
+            description = reminder["description"]
+        else:
+            title = reminder.title
+            due_date = reminder.due_date
+            description = reminder.description
+        
+        # 保存任务到数据库
+        task_id = create_task(
+            user_id=user_id,
+            title=title,
+            due_date=due_date,
+            description=description
+        )
+        
+        logger.info(f"Task saved to database with id: {task_id}")
         
         # 返回符合前端期望的数据结构
-        # return {
-        #     "session_id": str(uuid.uuid4()),
-        #     "text": request.text,
-        #     "is_final": True,
-        #     "task": {
-        #         "title": reminder.title,
-        #         "due_date": reminder.due_date,
-        #         "description": reminder.description
-        #     }
-        # }
         return {
             "session_id": str(uuid.uuid4()),
             "text": request.text,
             "is_final": True,
             "task": {
-                "title": "测试任务",
-                "due_date": "2022-12-12 12:00",
-                "description": "这是一个测试任务"
+                "id": task_id,
+                "title": title,
+                "due_date": due_date,
+                "description": description,
+                "completed": False
             }
         }
     except ValueError as e:

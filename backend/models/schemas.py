@@ -70,3 +70,55 @@ class AuthResponse(BaseModel):
     success: bool
     message: str
     user: UserResponse | None = None
+    tasks: list | None = None
+
+
+# ============== 任务相关模型 ==============
+
+class TaskCreateRequest(BaseModel):
+    """任务创建请求"""
+    user_id: int
+    title: str
+    due_date: str
+    description: str | None = None
+
+    @field_validator("due_date")
+    @classmethod
+    def validate_due_date(cls, v: str) -> str:
+        try:
+            datetime.strptime(v, "%Y-%m-%d %H:%M")
+        except ValueError:
+            raise ValueError("due_date 必须为 YYYY-MM-DD HH:MM 格式")
+        return v
+
+
+class TaskUpdateRequest(BaseModel):
+    """任务更新请求"""
+    title: str | None = None
+    due_date: str | None = None
+    description: str | None = None
+    completed: bool | None = None
+
+
+class TaskResponse(BaseModel):
+    """任务响应"""
+    id: int
+    user_id: int
+    title: str
+    due_date: str
+    description: str | None
+    completed: bool
+    created_at: str
+
+
+class TaskListResponse(BaseModel):
+    """任务列表响应"""
+    success: bool
+    message: str
+    tasks: list[TaskResponse]
+
+
+class TaskDeleteRequest(BaseModel):
+    """任务删除请求"""
+    user_id: int
+    task_id: int

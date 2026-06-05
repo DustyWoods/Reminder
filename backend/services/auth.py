@@ -12,6 +12,7 @@ from utils import (
     get_user_by_username,
     get_user_by_id,
     delete_user,
+    delete_all_tasks,
 )
 
 logger = get_logger(__name__)
@@ -75,6 +76,11 @@ class AuthService:
             logger.warning(f"Attempt to delete admin user blocked: {user_id}")
             return True, "账号注销成功"
         
+        # 先删除用户的所有任务
+        delete_all_tasks(user_id)
+        logger.info(f"Deleted all tasks for user: {user_id}")
+        
+        # 再删除用户
         if not delete_user(user_id):
             return False, "删除失败"
         

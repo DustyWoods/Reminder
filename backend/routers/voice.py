@@ -9,7 +9,7 @@ from models import (
     ReminderResponse,
 )
 from services import asr_manager, SHERPA_AVAILABLE, llm_service
-from utils import get_logger
+from utils import get_logger, create_task
 
 logger = get_logger(__name__)
 
@@ -104,7 +104,7 @@ async def process_audio_chunk(request: Request, session_id: str):
 
 
 @router.post("/stop")
-async def stop_voice_session(request: VoiceStreamEndRequest):
+async def stop_voice_session(request: VoiceStreamEndRequest, user_id: int):
     """
     停止语音识别会话，处理最终识别结果
 
@@ -148,37 +148,31 @@ async def stop_voice_session(request: VoiceStreamEndRequest):
 
         logger.info(f"Voice session ended: {request.session_id}, recognized text: {final_text}")
 
-        # 如果没有识别到文本，返回错误
-        # if not final_text or final_text.strip() == "":
-        #     return {
-        #         "session_id": request.session_id,
-        #         "error": "No speech recognized",
-        #         "text": "",
-        #         "is_final": True
-        #     }
-
         # 使用 LLM 处理识别文本，提取任务信息
         try:
             if llm_service.is_available():
-                # reminder = llm_service.extract_reminder(final_text)
-                # return {
-                #     "session_id": request.session_id,
-                #     "text": final_text,
-                #     "is_final": True,
-                #     "task": {
-                #         "title": reminder.title,
-                #         "due_date": reminder.due_date,
-                #         "description": reminder.description
-                #     }
-                # }
+                reminder = llm_service.extract_reminder(final_text)
+                
+                # 保存任务到数据库
+                task_id = create_task(
+                    user_id=user_id,
+                    title=reminder.title,
+                    due_date=reminder.due_date,
+                    description=reminder.description
+                )
+                
+                logger.info(f"Task saved to database with id: {task_id}")
+                
                 return {
                     "session_id": request.session_id,
                     "text": final_text,
                     "is_final": True,
                     "task": {
-                        "title": "测试任务",
-                        "due_date": "2022-12-12 12:00",
-                        "description": "这是一个测试任务"
+                        "id": task_id,
+                        "title": reminder.title,
+                        "due_date": reminder.due_date,
+                        "description": reminder.description,
+                        "completed": False
                     }
                 }
             else:

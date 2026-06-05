@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 from models import UserRegisterRequest, UserLoginRequest, UserDeleteRequest, AuthResponse, UserResponse
 from services import auth_service
-from utils import get_logger
+from utils import get_logger, get_tasks_by_user_id
 
 logger = get_logger(__name__)
 
@@ -46,10 +46,29 @@ async def login(request: UserLoginRequest) -> AuthResponse:
     
     logger.info(f"Login successful for username: {request.username}")
     
+    # 获取用户任务列表
+    tasks = get_tasks_by_user_id(user.id)
+    
+    # 转换任务数据格式
+    task_list = []
+    for task in tasks:
+        task_list.append({
+            "id": task['id'],
+            "user_id": task['user_id'],
+            "title": task['title'],
+            "due_date": task['due_date'],
+            "description": task['description'],
+            "completed": bool(task['completed']),
+            "created_at": str(task['created_at'])
+        })
+    
+    logger.info(f"Loaded {len(task_list)} tasks for user {user.id}")
+    
     return AuthResponse(
         success=True,
         message=message,
-        user=UserResponse(id=user.id, username=user.username)
+        user=UserResponse(id=user.id, username=user.username),
+        tasks=task_list
     )
 
 

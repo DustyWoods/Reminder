@@ -6,8 +6,12 @@ import 'package:reminder/Utils/Dio.dart';
 class TextService {
   static final DioUtils _dioUtils = DioUtils();
 
-  static Future<Map<String, dynamic>> getTask(String text) async {
-    Response response = await _dioUtils.post(HttpConstants.TEXT_TASK, data: {'text': text});
+  static Future<Map<String, dynamic>> getTask(String text, {int? userId}) async {
+    Response response = await _dioUtils.post(
+      HttpConstants.TEXT_TASK,
+      data: {'text': text},
+      queryParameters: userId != null ? {'user_id': userId} : null,
+    );
     return response.data;
   }
 }
