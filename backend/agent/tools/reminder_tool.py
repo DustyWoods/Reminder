@@ -1,13 +1,13 @@
 """
 提醒任务相关工具
 """
-from typing import Type
+from typing import Type, List
 from datetime import datetime, timedelta
 from langchain_core.tools import Tool
 from pydantic import BaseModel, Field
 from langchain_core.tools import BaseTool
 
-from models import ReminderResponse
+from models import ReminderResponse, ReminderListResponse
 from .base import BaseCustomTool, tool_registry
 from agent.config import get_config
 from utils import get_logger
@@ -18,7 +18,7 @@ logger = get_logger(__name__)
 class CreateReminderInput(BaseModel):
     """创建提醒任务的输入参数"""
     
-    title: str = Field(description="任务的简短标题，不超过 50 个字符")
+    title: str = Field(description="任务的简短标题")
     due_date: str = Field(description="任务的截止日期和时间，格式为 YYYY-MM-DD HH:MM")
     description: str = Field(description="任务的详细描述，包含所有相关细节")
 
@@ -65,6 +65,64 @@ class CreateReminderTool(BaseCustomTool):
             due_date=due_date,
             description=description
         )
+
+
+class CreateRemindersInput(BaseModel):
+    """批量创建提醒任务的输入参数"""
+    
+    tasks: List[dict] = Field(description="任务列表，每个任务包含 title、due_date 和 description")
+
+
+class CreateRemindersTool(BaseCustomTool):
+    """
+    批量创建提醒任务工具
+    
+    从自然语言中分析并提取多个提醒任务信息
+    """
+    
+    name: str = "create_reminders"
+    description: str = "从自然语言中分析并提取多个提醒任务信息，批量创建结构化的任务对象"
+    args_schema: Type[BaseModel] = CreateRemindersInput
+    
+    def _run(self, tasks: List[dict]) -> ReminderListResponse:
+        """
+        执行工具，批量创建提醒任务
+        
+        Args:
+            tasks: 任务列表，每个任务包含 title、due_date 和 description
+            
+        Returns:
+            ReminderListResponse: 结构化的任务列表信息
+        """
+        logger.info(f"Creating {len(tasks)} reminders")
+        
+        config = get_config()
+        result_tasks = []
+        
+        for task_data in tasks:
+            title = task_data.get("title", "")
+            due_date = task_data.get("due_date", "")
+            description = task_data.get("description", "")
+            
+            # 验证标题长度
+            if len(title) > config.max_title_length:
+                title = title[:config.max_title_length]
+            
+            # 验证日期格式
+            try:
+                datetime.strptime(due_date, "%Y-%m-%d %H:%M")
+            except ValueError:
+                # 使用默认日期
+                due_date = (datetime.now() + timedelta(hours=config.default_due_date_hours)).strftime("%Y-%m-%d %H:%M")
+                logger.warning(f"Invalid date format, using default: {due_date}")
+            
+            result_tasks.append(ReminderResponse(
+                title=title,
+                due_date=due_date,
+                description=description
+            ))
+        
+        return ReminderListResponse(tasks=result_tasks)
 
 
 class DateTimeParserInput(BaseModel):
@@ -136,6 +194,7 @@ class DateTimeParserTool(BaseCustomTool):
 
 # 注册默认工具
 tool_registry.register_tool(CreateReminderTool())
+tool_registry.register_tool(CreateRemindersTool())
 tool_registry.register_tool(DateTimeParserTool())
 
 logger.info(f"Registered {len(tool_registry)} default tools")

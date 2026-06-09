@@ -51,7 +51,7 @@ class AgentConfig(BaseSettings):
     
     # 业务配置
     default_due_date_hours: int = 24  # 默认截止日期（小时）
-    max_title_length: int = 50  # 最大标题长度
+    max_title_length: int = 10  # 最大标题长度
     enable_fallback: bool = True  # 启用备用方案
     
     class Config:

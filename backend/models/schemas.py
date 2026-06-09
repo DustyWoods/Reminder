@@ -23,6 +23,11 @@ class ReminderResponse(BaseModel):
         return v
 
 
+class ReminderListResponse(BaseModel):
+    """多个提醒响应"""
+    tasks: list[ReminderResponse]
+
+
 class VoiceStreamStartRequest(BaseModel):
     """开始语音识别会话请求"""
     session_id: str

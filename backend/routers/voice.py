@@ -149,33 +149,37 @@ async def stop_voice_session(request: VoiceStreamEndRequest, user_id: int):
 
         logger.info(f"Voice session ended: {request.session_id}, recognized text: {final_text}")
 
-        # 使用 Task Agent 处理识别文本，提取任务信息
+        # 使用 Task Agent 处理识别文本，提取任务信息（支持多任务）
         try:
             task_agent = get_task_agent()
             if task_agent.is_available():
-                reminder = task_agent.invoke(final_text)
+                reminders = task_agent.invoke(final_text)
                 
-                # 保存任务到数据库
-                task_id = create_task(
-                    user_id=user_id,
-                    title=reminder.title,
-                    due_date=reminder.due_date,
-                    description=reminder.description
-                )
-                
-                logger.info(f"Task saved to database with id: {task_id}")
-                
-                return {
-                    "session_id": request.session_id,
-                    "text": final_text,
-                    "is_final": True,
-                    "task": {
+                # 保存多个任务到数据库
+                saved_tasks = []
+                for reminder in reminders:
+                    task_id = create_task(
+                        user_id=user_id,
+                        title=reminder.title,
+                        due_date=reminder.due_date,
+                        description=reminder.description
+                    )
+                    
+                    logger.info(f"Task saved to database with id: {task_id}")
+                    
+                    saved_tasks.append({
                         "id": task_id,
                         "title": reminder.title,
                         "due_date": reminder.due_date,
                         "description": reminder.description,
                         "completed": False
-                    }
+                    })
+                
+                return {
+                    "session_id": request.session_id,
+                    "text": final_text,
+                    "is_final": True,
+                    "tasks": saved_tasks
                 }
             else:
                 return {

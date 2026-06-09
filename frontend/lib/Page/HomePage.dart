@@ -161,17 +161,36 @@ class _HomePageState extends State<HomePage> {
   ///   "session_id": "xxx",
   ///   "text": "识别文本",
   ///   "is_final": true,
-  ///   "task": {
-  ///     "title": "任务标题",
-  ///     "due_date": "2024-01-01 10:00",
-  ///     "description": "任务描述"
-  ///   },
+  ///   "tasks": [
+  ///     {
+  ///       "title": "任务标题1",
+  ///       "due_date": "2024-01-01 10:00",
+  ///       "description": "任务描述1"
+  ///     },
+  ///     {
+  ///       "title": "任务标题2",
+  ///       "due_date": "2024-01-02 14:00",
+  ///       "description": "任务描述2"
+  ///     }
+  ///   ],
   ///   "error": null  // 如果有错误
   /// }
   void _onVoiceInputEnd(Map<String, dynamic> result) {
     setState(() => _onVoiceInputing = false);
     
-    // 优先使用后端返回的任务数据
+    // 优先使用后端返回的多任务数据
+    if (result.containsKey('tasks') && result['tasks'] != null) {
+      final tasksData = result['tasks'];
+      if (tasksData is List) {
+        print('Received ${tasksData.length} task(s) from voice input');
+        for (var taskData in tasksData) {
+          _handleTaskResult(taskData);
+        }
+        return;
+      }
+    }
+    
+    // 兼容旧版单任务格式
     if (result.containsKey('task') && result['task'] != null) {
       print(result);
       _handleTaskResult(result['task']);
@@ -227,7 +246,19 @@ class _HomePageState extends State<HomePage> {
 
   /// 文本发送成功回调
   void _onTextSendSuccess(Map<String, dynamic> result) {
-    // 优先使用后端返回的任务数据
+    // 优先使用后端返回的多任务数据
+    if (result.containsKey('tasks') && result['tasks'] != null) {
+      final tasksData = result['tasks'];
+      if (tasksData is List) {
+        print('Received ${tasksData.length} task(s)');
+        for (var taskData in tasksData) {
+          _handleTaskResult(taskData);
+        }
+        return;
+      }
+    }
+    
+    // 兼容旧版单任务格式
     if (result.containsKey('task') && result['task'] != null) {
       print(result);
       _handleTaskResult(result['task']);
