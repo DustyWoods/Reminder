@@ -245,29 +245,45 @@ class _HomePageState extends State<HomePage> {
   }
 
   /// 文本发送成功回调
+  /// 
+  /// 后端返回的统一格式：
+  /// {
+  ///   "operation": "create/update/delete/query",
+  ///   "success": true/false,
+  ///   "message": "操作结果消息",
+  ///   "tasks": [...]
+  /// }
   void _onTextSendSuccess(Map<String, dynamic> result) {
-    // 优先使用后端返回的多任务数据
-    if (result.containsKey('tasks') && result['tasks'] != null) {
-      final tasksData = result['tasks'];
-      if (tasksData is List) {
-        print('Received ${tasksData.length} task(s)');
-        for (var taskData in tasksData) {
-          _handleTaskResult(taskData);
+    // 获取操作类型
+    final operation = result['operation'] ?? 'create';
+    final success = result['success'] ?? false;
+    final message = result['message'] ?? '';
+    
+    print('Operation: $operation, Success: $success, Message: $message');
+    
+    // 获取任务列表
+    final tasksData = result['tasks'];
+    if (tasksData is List && tasksData.isNotEmpty) {
+      // 使用taskManager的syncTasksFromServer方法处理不同操作类型
+      taskManager.syncTasksFromServer(operation, tasksData).then((syncSuccess) {
+        if (syncSuccess) {
+          setState(() {
+            _tasks = taskManager.getTasks();
+          });
+          print('Local tasks synchronized successfully');
         }
-        return;
+      }).catchError((error) {
+        print('Error syncing tasks: $error');
+      });
+    } else {
+      // 如果没有任务数据但操作成功（如删除操作），刷新本地数据
+      if (success && (operation == 'delete' || operation == 'update')) {
+        taskManager.refreshTasks().then((_) {
+          setState(() {
+            _tasks = taskManager.getTasks();
+          });
+        });
       }
-    }
-    
-    // 兼容旧版单任务格式
-    if (result.containsKey('task') && result['task'] != null) {
-      print(result);
-      _handleTaskResult(result['task']);
-      return;
-    }
-    
-    // 如果有错误
-    if (result.containsKey('error')) {
-      print('文本发送完成，但任务处理失败: ${result['error']}');
     }
   }
 

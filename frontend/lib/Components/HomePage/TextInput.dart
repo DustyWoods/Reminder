@@ -63,7 +63,7 @@ class _TextInputState extends State<TextInput> {
       final int? userIdInt = userId != null ? int.tryParse(userId) : null;
       
       // 调用后端接口，传递用户ID
-      final result = await TextService.getTask(text, userId: userIdInt);
+      final result = await TextService.processText(text, userId: userIdInt);
       _controller.clear();
       widget.onSendSuccess(result);
     } catch (e) {

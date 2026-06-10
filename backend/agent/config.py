@@ -87,8 +87,8 @@ def get_config() -> AgentConfig:
 
 def validate_config() -> bool:
     """验证配置是否完整"""
-    if not config.llm_api_key:
+    if not config.effective_api_key:
         return False
-    if config.llm_api_key == "your_api_key_here":
+    if config.effective_api_key == "your_api_key_here":
         return False
     return True

@@ -49,4 +49,14 @@ class DioUtils {
   Future<Response> delete(String url, {Map<String, dynamic>? data}) async {
     return await _dio.delete(url, data: data);
   }
+
+  /// 发送 GET 请求
+  Future<Response> get(String url, {Map<String, dynamic>? queryParameters}) async {
+    return await _dio.get(url, queryParameters: queryParameters);
+  }
+
+  /// 发送 PUT 请求
+  Future<Response> put(String url, {Map<String, dynamic>? data, Map<String, dynamic>? queryParameters}) async {
+    return await _dio.put(url, data: data, queryParameters: queryParameters);
+  }
 }

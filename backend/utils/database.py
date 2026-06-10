@@ -189,7 +189,13 @@ def get_tasks_by_user_id(user_id: int) -> list:
             (user_id,)
         )
         rows = cursor.fetchall()
-        return [dict_from_row(row) for row in rows]
+        tasks = []
+        for row in rows:
+            task = dict_from_row(row)
+            if task and 'completed' in task:
+                task['completed'] = bool(task['completed'])
+            tasks.append(task)
+        return tasks
 
 
 def get_task_by_id(task_id: int, user_id: int = None) -> Optional[dict]:
@@ -207,7 +213,10 @@ def get_task_by_id(task_id: int, user_id: int = None) -> Optional[dict]:
                 (task_id,)
             )
         row = cursor.fetchone()
-        return dict_from_row(row)
+        task = dict_from_row(row)
+        if task and 'completed' in task:
+            task['completed'] = bool(task['completed'])
+        return task
 
 
 def update_task(task_id: int, user_id: int, **kwargs) -> bool:

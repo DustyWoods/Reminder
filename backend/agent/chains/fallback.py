@@ -16,6 +16,9 @@ class FallbackChain:
     备用链
     
     当主要任务提取失败时使用的备用方案，使用简单处理
+    
+    注意：此类仅用于任务提取，不负责数据库保存。
+    数据库保存由调用方（如 TaskAgent）负责。
     """
     
     def __init__(self, llm: Optional = None):
@@ -36,7 +39,7 @@ class FallbackChain:
             text: 用户输入文本
             
         Returns:
-            List[ReminderResponse]: 任务列表
+            List[ReminderResponse]: 任务列表（仅包含任务信息，不含数据库ID）
         """
         logger.warning(f"Using fallback chain for: {text[:50]}...")
         
@@ -58,6 +61,6 @@ class FallbackChain:
             text: 用户输入文本
             
         Returns:
-            List[ReminderResponse]: 任务列表
+            List[ReminderResponse]: 任务列表（仅包含任务信息，不含数据库ID）
         """
         return self.invoke(text)

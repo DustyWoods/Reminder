@@ -165,10 +165,11 @@ class DateTimeParserTool(BaseCustomTool):
         # 简单的中文日期时间解析（可扩展）
         text_lower = text.lower()
         
-        # 解析相对时间
-        if "今天" in text_lower or "now" in text_lower:
-            result_dt = ref_dt
-        elif "明天" in text_lower or "tomorrow" in text_lower:
+        # 初始化结果日期
+        result_dt = ref_dt
+        
+        # 解析相对时间（日期部分）
+        if "明天" in text_lower or "tomorrow" in text_lower:
             result_dt = ref_dt + timedelta(days=1)
         elif "后天" in text_lower or "day after tomorrow" in text_lower:
             result_dt = ref_dt + timedelta(days=2)
@@ -176,7 +177,7 @@ class DateTimeParserTool(BaseCustomTool):
             result_dt = ref_dt + timedelta(weeks=1)
         elif "下个月" in text_lower or "next month" in text_lower:
             result_dt = ref_dt + timedelta(days=30)
-        else:
+        elif "今天" not in text_lower and "now" not in text_lower:
             # 尝试直接解析标准格式
             try:
                 result_dt = datetime.strptime(text, "%Y-%m-%d %H:%M")
@@ -184,17 +185,76 @@ class DateTimeParserTool(BaseCustomTool):
                 try:
                     result_dt = datetime.strptime(text, "%Y/%m/%d %H:%M")
                 except ValueError:
-                    # 使用默认时间
-                    config = get_config()
-                    result_dt = ref_dt + timedelta(hours=config.default_due_date_hours)
-                    logger.warning(f"Could not parse datetime, using default: {result_dt}")
+                    # 保持默认日期（使用ref_dt的日期）
+                    pass
         
+        # 解析时间部分（小时和分钟）
+        # 设置默认时间为0点
+        hour = 0
+        minute = 0
+        
+        # 解析中文时间表达
+        import re
+        
+        # 匹配"下午三点"、"晚上八点"、"上午九点"等格式
+        time_patterns = [
+            r'(上午|早上|早晨)\s*(\d{1,2})[:点时](\d{0,2})',  # 上午/早上 9点/9:30
+            r'(下午|中午|午后)\s*(\d{1,2})[:点时](\d{0,2})',  # 下午 3点/3:30
+            r'(晚上|夜里|深夜)\s*(\d{1,2})[:点时](\d{0,2})', # 晚上 8点/8:30
+            r'(\d{1,2})[:点时](\d{0,2})\s*(上午|早上|早晨)',   # 9点 上午
+            r'(\d{1,2})[:点时](\d{0,2})\s*(下午|中午)',       # 3点 下午
+            r'(\d{1,2})[:点时](\d{0,2})\s*(晚上|夜里)',       # 8点 晚上
+            r'(\d{1,2})[:点时](\d{0,2})',                    # 15:30 或 15点30
+        ]
+        
+        matched = False
+        for pattern in time_patterns:
+            match = re.search(pattern, text_lower)
+            if match:
+                groups = match.groups()
+                
+                # 判断是12小时制还是24小时制
+                period = None
+                if "上午" in groups or "早上" in groups or "早晨" in groups:
+                    period = "am"
+                elif "下午" in groups or "中午" in groups or "午后" in groups:
+                    period = "pm"
+                elif "晚上" in groups or "夜里" in groups or "深夜" in groups:
+                    period = "pm"
+                
+                # 提取小时和分钟
+                nums = [int(g) for g in groups if g.isdigit()]
+                if len(nums) >= 1:
+                    hour = nums[0]
+                if len(nums) >= 2:
+                    minute = nums[1]
+                
+                # 处理12小时制转换
+                if period == "pm" and hour < 12:
+                    hour += 12
+                elif period == "am" and hour == 12:
+                    hour = 0
+                
+                matched = True
+                break
+        
+        # 如果没有匹配到时间，尝试简单数字匹配
+        if not matched:
+            # 匹配单独的数字（如"三点"、"八点"）
+            num_match = re.search(r'(\d{1,2})\s*点', text_lower)
+            if num_match:
+                hour = int(num_match.group(1))
+                # 默认"点"在中文语境中通常指下午或晚上（除了明确是上午的情况）
+                if "上午" not in text_lower and "早上" not in text_lower:
+                    if hour < 12:
+                        hour += 12
+        
+        # 设置时间
+        result_dt = result_dt.replace(hour=hour, minute=minute, second=0, microsecond=0)
+        
+        logger.info(f"Parsed datetime result: {result_dt}")
         return result_dt.strftime("%Y-%m-%d %H:%M")
 
 
-# 注册默认工具
-tool_registry.register_tool(CreateReminderTool())
-tool_registry.register_tool(CreateRemindersTool())
-tool_registry.register_tool(DateTimeParserTool())
-
-logger.info(f"Registered {len(tool_registry)} default tools")
+# 以下工具已弃用，不再自动注册（任务提取由 LLM 直接完成，无需这些中间工具）
+# 保留代码以备参考
