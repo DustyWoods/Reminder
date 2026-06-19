@@ -83,12 +83,3 @@ config = AgentConfig()
 def get_config() -> AgentConfig:
     """获取全局配置实例"""
     return config
-
-
-def validate_config() -> bool:
-    """验证配置是否完整"""
-    if not config.effective_api_key:
-        return False
-    if config.effective_api_key == "your_api_key_here":
-        return False
-    return True

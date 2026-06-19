@@ -190,52 +190,56 @@ class TaskAgent(BaseAgent):
         对于 update: 返回匹配的 task_id + 更新字段
         对于 delete: 返回匹配的 task_id
         """
+        import json, re
+        from datetime import datetime, timedelta
+
+        today = datetime.now().strftime("%Y-%m-%d")
+        tomorrow = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
+
         tasks_desc = "\n".join([
             f"  ID={t['id']} | 标题={t['title']} | 时间={t['due_date']} | 描述={t.get('description','')}"
             for t in db_tasks
         ])
 
-        prompt = f"""根据用户输入，从任务列表中匹配目标任务。
+        prompt = f"""从任务列表中匹配用户要{operation == 'update' and '修改' or '删除'}的任务。
+
+## 当前时间
+今天是 {today}，明天是 {tomorrow}。
 
 ## 用户输入
 {user_input}
 
 ## 任务列表
-{tasks_desc}
+{tasks_desc}"""
 
-## 要求
-请输出JSON，根据操作类型选择格式：
-
-操作类型: {operation}
-"""
         if operation == "update":
             prompt += """
-输出格式：
+
+## 输出格式
 {"task_id": 数字, "update_params": {"title": "新标题(可选)", "due_date": "YYYY-MM-DD HH:MM(可选)", "description": "新描述(可选)"}}
 
-注意：
-- 只输出需要修改的字段，不需要修改的字段不要出现
-- 如果用户输入中含时间变化（如"改到明天下午三点"），需要计算出新的具体时间
-- 如无法确定任务，task_id 设为 null
-"""
+## 注意
+- 只输出需要修改的字段，不改的字段不要出现
+- 时间变化需计算具体值（如"改到明天下午三点"→明天15:00的日期）
+- 无法确定任务时 task_id 设为 null"""
         else:
             prompt += """
-输出格式：
+
+## 输出格式
 {"task_id": 数字或null}
 
-注意：
-- 如果用户输入清晰指向某个任务，返回其ID
-- 如果无法确定，task_id 设为 null
-"""
+## 注意
+- 用户输入明确指向某个任务时返回其ID
+- 无法确定时 task_id 设为 null"""
 
         prompt += "\n只输出JSON，不要其他内容。"
 
         try:
             response = await self.llm.ainvoke([HumanMessage(content=prompt)])
-            import json
             content = response.content
+
             # 提取JSON
-            json_match = __import__('re').search(r'\{.*\}', content, __import__('re').DOTALL)
+            json_match = re.search(r'\{.*\}', content, re.DOTALL)
             if json_match:
                 result = json.loads(json_match.group())
             else:
@@ -262,17 +266,9 @@ class TaskAgent(BaseAgent):
     # ==================== 降级 ====================
 
     def _fallback_result(self, text: str, user_id: int) -> dict:
-        """降级处理：创建简单任务"""
-        title = text[:self.config.max_title_length] if len(text) > self.config.max_title_length else text
-        due_date = datetime.now().strftime("%Y-%m-%d %H:%M")
-        try:
-            tid = create_task(user_id or 1, title, due_date, text)
-            return {
-                "operation": "create", "success": True, "message": "已创建任务（降级处理）",
-                "tasks": [{"id": tid, "title": title, "due_date": due_date, "description": text, "completed": False}]
-            }
-        except Exception:
-            return {"operation": "create", "success": False, "message": "处理失败", "tasks": []}
+        """降级处理：使用 FallbackChain 创建简单任务"""
+        fallback_tasks = self.fallback_chain.invoke(text)
+        return self._do_create(fallback_tasks, user_id)
 
     # ==================== 公共方法（兼容旧接口） ====================
 
@@ -308,9 +304,6 @@ class TaskAgent(BaseAgent):
             "message": "更新成功" if success else "更新失败",
             "tasks": [updated] if updated else []
         }
-
-    def get_tools_info(self) -> dict:
-        return {"count": len(self.tools), "names": [t.name for t in self.tools]}
 
 
 # 全局实例
