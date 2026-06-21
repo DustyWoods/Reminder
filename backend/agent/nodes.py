@@ -16,6 +16,7 @@ from .state import AgentState, StepResult
 from .prompts import build_plan_prompt, build_summarize_prompt
 from .actions import (
     parse_plan_json, execute_create, execute_update, execute_delete, execute_query,
+    execute_schedule,
 )
 from utils import get_logger, build_llm
 from utils.database import get_tasks_by_user_id
@@ -118,6 +119,8 @@ async def act_node(state: AgentState) -> dict:
             result = await execute_delete(llm, user_id, params, existing_tasks)
         elif operation == "query":
             result = execute_query(user_id)
+        elif operation == "schedule":
+            result = await execute_schedule(llm, user_id, params, existing_tasks)
         else:
             result = {"success": False, "message": f"未知操作类型: {operation}"}
 
@@ -214,6 +217,8 @@ def _quick_summary(results: list) -> dict:
     for r in results:
         if r["operation"] == "create":
             ops.append(f"创建了「{r.get('task_title', '任务')}」")
+        elif r["operation"] == "schedule":
+            ops.append(f"已安排「{r.get('task_title', '任务')}」")
         elif r["operation"] == "update":
             ops.append("更新了任务")
         elif r["operation"] == "delete":

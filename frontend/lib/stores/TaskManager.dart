@@ -175,6 +175,7 @@ class TaskManager {
     try {
       switch (operation.toLowerCase()) {
         case 'create':
+        case 'schedule':
           return await _handleCreateOperation(tasks);
         case 'update':
           return await _handleUpdateOperation(tasks);

@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
 
-from .prompts import build_match_prompt
+from .prompts import build_match_prompt, build_schedule_prompt
 from utils import get_logger, parse_llm_json
 from utils.database import (
     create_task, get_tasks_by_user_id, get_task_by_id,
@@ -191,3 +191,64 @@ def execute_query(user_id: int) -> dict:
         "tasks": tasks,
         "message": f"共 {len(tasks)} 个任务"
     }
+
+
+async def execute_schedule(
+    llm: ChatOpenAI,
+    user_id: int,
+    params: dict,
+    existing_tasks: list[dict],
+) -> dict:
+    """
+    执行智能时间安排：LLM 推理最佳时间 → 自动创建任务
+
+    返回格式与 execute_create 一致：{success, task_id, title, due_date, description, task_data, message}
+    """
+    title = params.get("title", "未命名任务")
+    description = params.get("description", "")
+    activity_type = params.get("activity_type", "其他")
+
+    logger.info(f"[Schedule] Arranging time for: {title} (type={activity_type})")
+
+    prompt = build_schedule_prompt(title, description, activity_type, existing_tasks)
+
+    try:
+        response = await llm.ainvoke([HumanMessage(content=prompt)])
+        result = parse_llm_json(response.content)
+
+        if not result or not isinstance(result, dict):
+            # 无法解析 → 默认今晚 20:00
+            due_date = datetime.now().strftime("%Y-%m-%d") + " 20:00"
+        else:
+            due_date = result.get("due_date", "")
+            try:
+                datetime.strptime(due_date, "%Y-%m-%d %H:%M")
+            except ValueError:
+                due_date = datetime.now().strftime("%Y-%m-%d") + " 20:00"
+
+        logger.info(f"[Schedule] Suggested due_date: {due_date}")
+
+        # 自动创建任务
+        task_id = create_task(user_id, title, due_date, description)
+        task = get_task_by_id(task_id, user_id)
+
+        return {
+            "success": True,
+            "task_id": task_id,
+            "title": title,
+            "due_date": due_date,
+            "description": description,
+            "task_data": task,
+            "message": f"已创建「{title}」，时间：{due_date}",
+        }
+    except Exception as e:
+        logger.error(f"[Schedule] Failed: {e}")
+        return {
+            "success": False,
+            "message": f"时间安排失败: {e}",
+            "task_id": None,
+            "title": None,
+            "due_date": None,
+            "description": None,
+            "task_data": None,
+        }

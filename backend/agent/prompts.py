@@ -54,11 +54,20 @@ def build_plan_prompt(user_input: str, existing_tasks: list[dict]) -> str:
 ### query（查询任务）
 - 用户询问有哪些任务、查看任务列表
 
+### schedule（时间安排建议）
+当用户没有给出具体时间，而是让你"安排时间"、"帮我找个时间"、"什么时候合适"时，使用 schedule
+- 用户说"帮我安排一个合理时间"、"什么时候去比较好"、"你觉得几点合适"
+- 用户说"安排一下"但未指定具体时间
+- 需要 title(≤10字), description, activity_type（活动类型，如"购物"、"运动"、"学习"）
+- **不需要 due_date**，due_date 由后续的调度逻辑智能推断
+
 ### 关键区别
 - "没时间做了" → **delete**（任务不要了），不是 update（不是改时间）
 - "改到明天" → **update**（改时间），不是 delete
 - "做完了" → **update**（改 completed 为 true），不是 delete
 - "不做了" → **delete**（取消任务），不是 update
+- "晚上要去超市买菜，帮我安排时间" → **schedule**（用户没给具体时间，需要智能推荐），不是 create
+- "晚上八点去超市买菜" → **create**（用户明确给了时间），不是 schedule
 
 ## 时间解析规则
 基础规则（用户输入中直接包含时间）：
@@ -114,6 +123,16 @@ def build_plan_prompt(user_input: str, existing_tasks: list[dict]) -> str:
     "description": "取消遛狗，没时间了",
     "params": {{
       "target_description": "遛狗"
+    }}
+  }},
+  {{
+    "step": 4,
+    "operation": "schedule",
+    "description": "帮用户安排晚上去超市买菜的时间",
+    "params": {{
+      "title": "去超市买菜",
+      "description": "晚上去超市买菜",
+      "activity_type": "购物"
     }}
   }}
 ]
@@ -185,9 +204,98 @@ def build_verify_prompt(step: dict, result: dict) -> str:
 
 判断标准：
 - create: 返回了 task_id 且 > 0 即为成功
+- schedule: 返回了 task_id 且 > 0 即为成功（同 create）
 - update: success 为 true 即为成功
 - delete: success 为 true 即为成功
 - query: success 为 true 即为成功
 
 输出格式：{{"valid": true/false, "reason": "简要说明"}}
 只输出 JSON。"""
+
+
+def build_schedule_prompt(
+    title: str,
+    description: str,
+    activity_type: str,
+    existing_tasks: list[dict],
+) -> str:
+    """
+    构建智能时间安排建议的提示词
+
+    根据用户日常作息、已有任务和活动类型，推理出最佳时间
+    """
+    now = datetime.now()
+    today = now.strftime("%Y-%m-%d")
+    tomorrow = (now + timedelta(days=1)).strftime("%Y-%m-%d")
+    now_str = now.strftime("%Y-%m-%d %H:%M")
+    current_hour = now.hour
+
+    tasks_desc = "无"
+    if existing_tasks:
+        tasks_desc = "\n".join([
+            f"  - {t['title']} | 截止={t['due_date']} | 描述={t.get('description','')} | 已完成={t.get('completed',False)}"
+            for t in existing_tasks
+        ])
+
+    if current_hour < 6:
+        time_slot = "凌晨"
+    elif current_hour < 9:
+        time_slot = "早晨"
+    elif current_hour < 12:
+        time_slot = "上午"
+    elif current_hour < 14:
+        time_slot = "中午"
+    elif current_hour < 18:
+        time_slot = "下午"
+    elif current_hour < 22:
+        time_slot = "晚上"
+    else:
+        time_slot = "深夜"
+
+    return f"""你是一个智能时间安排助手。根据用户日常作息、已有任务和活动类型，为新活动推荐一个合理的时间。
+
+## 当前时间
+今天是 {today}，明天是 {tomorrow}，当前时间 {now_str}（{time_slot}）。
+
+## 用户日常作息参考（默认）
+- 06:00-07:00 起床、洗漱、早餐
+- 07:00-09:00 通勤时间
+- 09:00-12:00 工作时间
+- 12:00-13:00 午餐时间
+- 13:00-18:00 工作时间
+- 18:00-19:00 下班、通勤
+- 19:00-20:00 晚餐时间
+- 20:00-22:00 自由时间（适合购物、运动、娱乐）
+- 22:00-23:00 洗漱、准备休息
+- 23:00-06:00 睡眠时间
+
+## 活动类型与适合时段
+- 购物/买菜：19:00-21:00（饭后）、周末白天
+- 运动/健身：06:00-08:00（晨练）、18:00-20:00（下班后）
+- 学习/阅读：20:00-22:00（安静时段）、06:00-08:00（早晨）
+- 会议/工作：09:00-12:00、14:00-17:00
+- 社交/聚会：18:00-21:00
+- 家务/整理：19:00-21:00
+- 医疗/看诊：09:00-12:00、14:00-17:00
+- 休闲/娱乐：20:00-22:00
+
+## 已有任务（时间冲突参考）
+{tasks_desc}
+
+## 待安排活动
+- 标题：{title}
+- 描述：{description}
+- 活动类型：{activity_type}
+
+## 推理规则
+1. 先确定活动类型的最佳时段范围
+2. 检查该时段内是否已有任务，如有冲突则避开
+3. 考虑活动之间的缓冲时间（至少 15-30 分钟）
+4. 如果当前时间已经过了最佳时段，选择下一个最近的可用时段
+5. 如果今天已无合适时间，建议明天的最早可用时段
+
+## 输出格式
+纯 JSON，不要 markdown 代码块：
+{{"due_date": "YYYY-MM-DD HH:MM"}}
+
+只输出 JSON，不要其他内容。"""

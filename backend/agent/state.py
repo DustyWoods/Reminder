@@ -7,7 +7,7 @@ from typing import TypedDict, Optional
 class StepResult(TypedDict):
     """单个操作步骤的结果"""
     step_index: int
-    operation: str          # create / update / delete / query
+    operation: str          # create / update / delete / query / schedule
     success: bool
     message: str
     task_id: Optional[int]
