@@ -165,7 +165,7 @@ class TaskManager {
 
   /// 根据操作类型批量更新本地任务数据
   /// 
-  /// operation: 操作类型 (create/update/delete/query)
+  /// operation: 操作类型 (create/update/delete/query/mixed)
   /// tasks: 任务列表
   /// 
   /// Returns: 操作是否成功
@@ -181,6 +181,9 @@ class TaskManager {
         case 'delete':
           return await _handleDeleteOperation(tasks);
         case 'query':
+          return await _handleQueryOperation(tasks);
+        case 'mixed':
+          // 混合操作：直接刷新本地数据
           return await _handleQueryOperation(tasks);
         default:
           print('Unknown operation type: $operation');

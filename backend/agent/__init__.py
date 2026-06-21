@@ -1,21 +1,19 @@
 """
-Agent 模块 - 精简版
+Agent 模块 - ReAct 版
 
-基于 LangChain 的智能体模块
-- config: 全局配置管理
-- tools: 数据库操作工具
-- chains: 任务提取链
-- agents: 智能体定义
+基于 LangGraph 的 ReAct 框架智能体
+流程: Plan → Act → Observe → Summarize
 """
-
 from agent.config import get_config, AgentConfig
-from agent.agents import TaskAgent, get_task_agent, task_agent
-from agent.tools import get_tool_registry
+from agent.graph import create_react_agent, run_react_agent
+from agent.state import AgentState
 
-__version__ = "2.0.0"
+__version__ = "4.0.0"
 
 __all__ = [
-    "get_config", "AgentConfig",
-    "TaskAgent", "get_task_agent", "task_agent",
-    "get_tool_registry",
+    "get_config",
+    "AgentConfig",
+    "create_react_agent",
+    "run_react_agent",
+    "AgentState",
 ]

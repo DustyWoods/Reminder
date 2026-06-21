@@ -9,8 +9,8 @@ from models import (
     ReminderResponse,
 )
 from services import asr_manager, SHERPA_AVAILABLE
-from agent import get_task_agent
-from utils import get_logger, create_task
+from agent import run_react_agent
+from utils import get_logger
 
 logger = get_logger(__name__)
 
@@ -149,52 +149,25 @@ async def stop_voice_session(request: VoiceStreamEndRequest, user_id: int):
 
         logger.info(f"Voice session ended: {request.session_id}, recognized text: {final_text}")
 
-        # 使用 Task Agent 处理识别文本，提取任务信息（支持多任务）
+        # 使用 ReAct Agent 处理识别文本
         try:
-            task_agent = get_task_agent()
-            if task_agent.is_available():
-                reminders = task_agent.invoke(final_text)
-                
-                # 保存多个任务到数据库
-                saved_tasks = []
-                for reminder in reminders:
-                    task_id = create_task(
-                        user_id=user_id,
-                        title=reminder.title,
-                        due_date=reminder.due_date,
-                        description=reminder.description
-                    )
-                    
-                    logger.info(f"Task saved to database with id: {task_id}")
-                    
-                    saved_tasks.append({
-                        "id": task_id,
-                        "title": reminder.title,
-                        "due_date": reminder.due_date,
-                        "description": reminder.description,
-                        "completed": False
-                    })
-                
-                return {
-                    "session_id": request.session_id,
-                    "text": final_text,
-                    "is_final": True,
-                    "tasks": saved_tasks
-                }
-            else:
-                return {
-                    "session_id": request.session_id,
-                    "text": final_text,
-                    "is_final": True,
-                    "error": "LLM service not available"
-                }
-        except Exception as e:
-            logger.warning(f"LLM processing failed for session {request.session_id}: {str(e)}")
+            result = await run_react_agent(final_text, user_id=user_id)
             return {
                 "session_id": request.session_id,
                 "text": final_text,
                 "is_final": True,
-                "error": f"Failed to process text into task: {str(e)}"
+                "operation": result.get("operation", "create"),
+                "success": result.get("success", False),
+                "summary": result.get("summary", ""),
+                "tasks": result.get("tasks", [])
+            }
+        except Exception as e:
+            logger.warning(f"ReAct Agent processing failed for session {request.session_id}: {str(e)}")
+            return {
+                "session_id": request.session_id,
+                "text": final_text,
+                "is_final": True,
+                "error": f"Failed to process text: {str(e)}"
             }
 
     except Exception as e:

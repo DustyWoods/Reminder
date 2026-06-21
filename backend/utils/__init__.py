@@ -18,6 +18,7 @@ from .database import (
     delete_task,
     delete_all_tasks,
 )
+from .llm_helpers import parse_llm_json, build_llm
 
 __all__ = [
     "logger",
@@ -40,4 +41,6 @@ __all__ = [
     "update_task",
     "delete_task",
     "delete_all_tasks",
+    "parse_llm_json",
+    "build_llm",
 ]

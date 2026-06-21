@@ -246,38 +246,53 @@ class _HomePageState extends State<HomePage> {
 
   /// 文本发送成功回调
   /// 
-  /// 后端返回的统一格式：
+  /// 后端 ReAct Agent 返回的统一格式：
   /// {
-  ///   "operation": "create/update/delete/query",
+  ///   "operation": "create/update/delete/query/mixed",
+  ///   "operations": ["create", "delete"],
   ///   "success": true/false,
+  ///   "summary": "操作结果总结",
   ///   "message": "操作结果消息",
-  ///   "tasks": [...]
+  ///   "tasks": [...],
+  ///   "results": [...],
+  ///   "plan": [...]
   /// }
   void _onTextSendSuccess(Map<String, dynamic> result) {
     // 获取操作类型
     final operation = result['operation'] ?? 'create';
     final success = result['success'] ?? false;
-    final message = result['message'] ?? '';
+    final summary = result['summary'] ?? result['message'] ?? '';
     
-    print('Operation: $operation, Success: $success, Message: $message');
+    print('Operation: $operation, Success: $success, Summary: $summary');
     
     // 获取任务列表
     final tasksData = result['tasks'];
     if (tasksData is List && tasksData.isNotEmpty) {
-      // 使用taskManager的syncTasksFromServer方法处理不同操作类型
-      taskManager.syncTasksFromServer(operation, tasksData).then((syncSuccess) {
-        if (syncSuccess) {
+      // 处理混合操作：逐个处理结果中的任务
+      if (operation == 'mixed') {
+        taskManager.refreshTasks().then((_) {
           setState(() {
             _tasks = taskManager.getTasks();
           });
-          print('Local tasks synchronized successfully');
-        }
-      }).catchError((error) {
-        print('Error syncing tasks: $error');
-      });
+        }).catchError((error) {
+          print('Error refreshing tasks: $error');
+        });
+      } else {
+        // 单一操作类型
+        taskManager.syncTasksFromServer(operation, tasksData).then((syncSuccess) {
+          if (syncSuccess) {
+            setState(() {
+              _tasks = taskManager.getTasks();
+            });
+            print('Local tasks synchronized successfully');
+          }
+        }).catchError((error) {
+          print('Error syncing tasks: $error');
+        });
+      }
     } else {
       // 如果没有任务数据但操作成功（如删除操作），刷新本地数据
-      if (success && (operation == 'delete' || operation == 'update')) {
+      if (success && (operation == 'delete' || operation == 'update' || operation == 'mixed')) {
         taskManager.refreshTasks().then((_) {
           setState(() {
             _tasks = taskManager.getTasks();

@@ -9,8 +9,8 @@
 from fastapi import APIRouter, HTTPException
 
 from models import TaskUpdateRequest, TaskResponse, TaskListResponse
-from agent import get_task_agent
 from utils import get_logger
+from utils.database import get_tasks_by_user_id, get_task_by_id, update_task, delete_task
 
 logger = get_logger(__name__)
 
@@ -23,14 +23,10 @@ async def get_tasks(user_id: int):
     logger.info(f"Fetching tasks for user {user_id}")
 
     try:
-        task_agent = get_task_agent()
-        result = task_agent.execute_query(user_id)
-
-        if not result.get("success"):
-            raise HTTPException(status_code=404, detail=result.get("message", "获取失败"))
+        tasks = get_tasks_by_user_id(user_id)
 
         task_responses = []
-        for task in result.get("tasks", []):
+        for task in tasks:
             task_responses.append(TaskResponse(
                 id=task["id"],
                 user_id=task.get("user_id", user_id),
@@ -59,8 +55,6 @@ async def update_task_by_id(user_id: int, task_id: int, request: TaskUpdateReque
         if not any([request.title, request.due_date, request.description, request.completed is not None]):
             raise HTTPException(status_code=400, detail="没有提供要更新的字段")
 
-        from utils.database import update_task, get_task_by_id
-
         update_data = {}
         if request.title is not None: update_data["title"] = request.title
         if request.due_date is not None: update_data["due_date"] = request.due_date
@@ -86,11 +80,9 @@ async def delete_task_by_id(user_id: int, task_id: int):
     logger.info(f"Deleting task {task_id} for user {user_id}")
 
     try:
-        task_agent = get_task_agent()
-        result = task_agent.execute_delete(user_id, task_id)
-
-        if not result.get("success"):
-            raise HTTPException(status_code=404, detail=result.get("message", "删除失败"))
+        success = delete_task(task_id, user_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="删除失败")
 
         logger.info(f"Task {task_id} deleted")
         return {"success": True, "message": "删除成功"}
