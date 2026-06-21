@@ -4,7 +4,6 @@ import 'package:reminder/Components/HomePage/LoadingView.dart';
 import 'package:reminder/Components/HomePage/UnauthenticatedView.dart';
 import 'package:reminder/Components/HomePage/VoiceInput.dart';
 import 'package:reminder/Components/HomePage/VoiceMask.dart';
-import 'package:reminder/Components/HomePage/Handling.dart';
 import 'package:reminder/Components/HomePage/SwitchButton.dart';
 import 'package:reminder/Components/HomePage/TextInput.dart';
 import 'package:reminder/Constants/main.dart';
@@ -30,9 +29,6 @@ class _HomePageState extends State<HomePage> {
   
   // 是否正在语音输入中
   bool _onVoiceInputing = false;
-  
-  // 是否正在处理任务
-  bool _isHandling = false;
   
   // 是否已初始化
   bool _isInitialized = false;
@@ -140,9 +136,6 @@ class _HomePageState extends State<HomePage> {
 
         // 语音/文本输入切换按钮
         SwitchButton(flag: _inputFlag, onTap: _onInputModeSwitch),
-
-        // 任务处理中的加载遮罩
-        _isHandling ? const Handling() : Container(),
       ],
     );
   }
@@ -155,151 +148,47 @@ class _HomePageState extends State<HomePage> {
   }
 
   /// 语音输入结束，处理后端返回的结果
-  /// 
-  /// 后端返回的数据结构：
-  /// {
-  ///   "session_id": "xxx",
-  ///   "text": "识别文本",
-  ///   "is_final": true,
-  ///   "tasks": [
-  ///     {
-  ///       "title": "任务标题1",
-  ///       "due_date": "2024-01-01 10:00",
-  ///       "description": "任务描述1"
-  ///     },
-  ///     {
-  ///       "title": "任务标题2",
-  ///       "due_date": "2024-01-02 14:00",
-  ///       "description": "任务描述2"
-  ///     }
-  ///   ],
-  ///   "error": null  // 如果有错误
-  /// }
   void _onVoiceInputEnd(Map<String, dynamic> result) {
     setState(() => _onVoiceInputing = false);
-    
-    // 优先使用后端返回的多任务数据
-    if (result.containsKey('tasks') && result['tasks'] != null) {
-      final tasksData = result['tasks'];
-      if (tasksData is List) {
-        print('Received ${tasksData.length} task(s) from voice input');
-        for (var taskData in tasksData) {
-          _handleTaskResult(taskData);
-        }
-        return;
-      }
-    }
-    
-    // 兼容旧版单任务格式
-    if (result.containsKey('task') && result['task'] != null) {
-      print(result);
-      _handleTaskResult(result['task']);
-      return;
-    }
-    
-    // 如果有识别文本但没有任务数据，显示错误
-    if (result.containsKey('text') && 
-        result['text'] != null && 
-        result['text'].toString().isNotEmpty &&
-        result.containsKey('error')) {
-      print('语音识别完成，但任务处理失败: ${result['error']}');
-    }
+    _handleServerResponse(result);
   }
 
   // ============== 任务处理 ==============
 
-  /// 处理后端返回的任务结果
-  void _handleTaskResult(Map<String, dynamic> taskData) {
-    setState(() => _isHandling = true);
-    
-    try {
-      // 解析截止日期
-      final dueDateStr = taskData['due_date'] ?? '';
-      final parts = dueDateStr.split(' ');
-      final Map<String, String> dueDate = {
-        'date': parts.isNotEmpty ? parts[0] : '',
-        'time': parts.length > 1 ? parts[1] : '',
-      };
-      
-      // 创建任务对象
-      final task = Task(
-        taskData['title'] ?? '新任务',
-        taskData['description'] ?? '',
-        dueDate,
-      );
-      
-      // 保存任务
-      taskManager.addTask(task).then((_) {
-        setState(() {
-          _tasks = taskManager.getTasks();
-          _isHandling = false;
-        });
-      }).catchError((error) {
-        print('Error saving task: $error');
-        setState(() => _isHandling = false);
-      });
-    } catch (error) {
-      print('Error processing task result: $error');
-      setState(() => _isHandling = false);
+  /// 统一处理服务端响应（文本输入和语音输入共用）
+  void _handleServerResponse(Map<String, dynamic> result) {
+    final operation = result['operation'] ?? 'create';
+    final success = result['success'] ?? false;
+    final summary = result['summary'] ?? '';
+
+    print('Operation: $operation, Success: $success, Summary: $summary');
+
+    final tasksData = result['tasks'];
+    if (tasksData is List && tasksData.isNotEmpty) {
+      if (operation == 'mixed') {
+        taskManager.refreshTasks().then((_) {
+          if (mounted) setState(() => _tasks = taskManager.getTasks());
+        }).catchError((e) => print('Error refreshing tasks: $e'));
+      } else {
+        taskManager.syncTasksFromServer(operation, tasksData).then((syncSuccess) {
+          if (syncSuccess && mounted) {
+            setState(() => _tasks = taskManager.getTasks());
+          }
+        }).catchError((e) => print('Error syncing tasks: $e'));
+      }
+    } else {
+      // 没有 tasks 数据但操作成功（如删除），刷新本地数据
+      if (success && (operation == 'delete' || operation == 'update' || operation == 'mixed')) {
+        taskManager.refreshTasks().then((_) {
+          if (mounted) setState(() => _tasks = taskManager.getTasks());
+        }).catchError((e) => print('Error refreshing tasks: $e'));
+      }
     }
   }
 
   /// 文本发送成功回调
-  /// 
-  /// 后端 ReAct Agent 返回的统一格式：
-  /// {
-  ///   "operation": "create/update/delete/query/mixed",
-  ///   "operations": ["create", "delete"],
-  ///   "success": true/false,
-  ///   "summary": "操作结果总结",
-  ///   "message": "操作结果消息",
-  ///   "tasks": [...],
-  ///   "results": [...],
-  ///   "plan": [...]
-  /// }
   void _onTextSendSuccess(Map<String, dynamic> result) {
-    // 获取操作类型
-    final operation = result['operation'] ?? 'create';
-    final success = result['success'] ?? false;
-    final summary = result['summary'] ?? result['message'] ?? '';
-    
-    print('Operation: $operation, Success: $success, Summary: $summary');
-    
-    // 获取任务列表
-    final tasksData = result['tasks'];
-    if (tasksData is List && tasksData.isNotEmpty) {
-      // 处理混合操作：逐个处理结果中的任务
-      if (operation == 'mixed') {
-        taskManager.refreshTasks().then((_) {
-          setState(() {
-            _tasks = taskManager.getTasks();
-          });
-        }).catchError((error) {
-          print('Error refreshing tasks: $error');
-        });
-      } else {
-        // 单一操作类型
-        taskManager.syncTasksFromServer(operation, tasksData).then((syncSuccess) {
-          if (syncSuccess) {
-            setState(() {
-              _tasks = taskManager.getTasks();
-            });
-            print('Local tasks synchronized successfully');
-          }
-        }).catchError((error) {
-          print('Error syncing tasks: $error');
-        });
-      }
-    } else {
-      // 如果没有任务数据但操作成功（如删除操作），刷新本地数据
-      if (success && (operation == 'delete' || operation == 'update' || operation == 'mixed')) {
-        taskManager.refreshTasks().then((_) {
-          setState(() {
-            _tasks = taskManager.getTasks();
-          });
-        });
-      }
-    }
+    _handleServerResponse(result);
   }
 
   /// 文本发送失败回调

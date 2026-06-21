@@ -92,18 +92,15 @@ class _VoiceInputState extends State<VoiceInput> {
   /// 停止语音输入
   /// 
   /// 用户松开按钮时调用：
-  /// 1. 通知上层停止录音
-  /// 2. 停止流式语音服务
-  /// 3. 获取后端返回的最终结果（识别文本 + 任务结构化数据）
+  /// 1. 停止流式语音服务
+  /// 2. 获取后端返回的最终结果（识别文本 + 任务结构化数据）
   Future<void> _stopListening() async {
-    widget.onVoiceInputEnd?.call({});
-    
     try {
       final result = await _voiceService.stopListening();
-      // 将结果传递给上层处理
       widget.onVoiceInputEnd?.call(result);
     } catch (e) {
       print("Failed to stop listening: $e");
+      widget.onVoiceInputEnd?.call({});
     }
   }
 

@@ -3,20 +3,14 @@
 
 统一响应格式：
 {
-    "session_id": "uuid",
-    "text": "用户输入",
-    "is_final": true,
-    "operation": "create/update/delete/query/mixed",
     "success": true/false,
     "summary": "操作结果总结",
-    "message": "操作结果消息",
+    "operation": "create/update/delete/query/mixed",
     "tasks": [...],
-    "results": [...],
-    "plan": [...]
+    "results": [...]
 }
 """
 from fastapi import APIRouter, HTTPException, Query
-import uuid
 
 from models import ReminderRequest
 from agent import run_react_agent
@@ -43,7 +37,7 @@ async def process_text_task(request: ReminderRequest, user_id: int = Query(1)):
 
     try:
         result = await run_react_agent(request.text, user_id=user_id)
-        return _build_response(request.text, result)
+        return _build_response(result)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -56,24 +50,18 @@ async def query_text_task(user_id: int = Query(1)):
     """查询用户任务"""
     try:
         result = await run_react_agent("查询任务", user_id=user_id)
-        return _build_response("查询任务", result)
+        return _build_response(result)
     except Exception as e:
         logger.exception(f"Error querying tasks: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-def _build_response(text: str, result: dict) -> dict:
+def _build_response(result: dict) -> dict:
     """构建统一响应格式"""
     return {
-        "session_id": str(uuid.uuid4()),
-        "text": text,
-        "is_final": True,
-        "operation": result.get("operation", "create"),
-        "operations": result.get("operations", []),
         "success": result.get("success", False),
         "summary": result.get("summary", ""),
-        "message": result.get("summary", ""),
+        "operation": result.get("operation", "create"),
         "tasks": result.get("tasks", []),
-        "results": result.get("results", []),
-        "plan": result.get("plan", [])
+        "results": result.get("results", [])
     }

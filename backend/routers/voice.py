@@ -155,19 +155,22 @@ async def stop_voice_session(request: VoiceStreamEndRequest, user_id: int):
             return {
                 "session_id": request.session_id,
                 "text": final_text,
-                "is_final": True,
-                "operation": result.get("operation", "create"),
                 "success": result.get("success", False),
                 "summary": result.get("summary", ""),
-                "tasks": result.get("tasks", [])
+                "operation": result.get("operation", "create"),
+                "tasks": result.get("tasks", []),
+                "results": result.get("results", [])
             }
         except Exception as e:
             logger.warning(f"ReAct Agent processing failed for session {request.session_id}: {str(e)}")
             return {
                 "session_id": request.session_id,
                 "text": final_text,
-                "is_final": True,
-                "error": f"Failed to process text: {str(e)}"
+                "success": False,
+                "summary": f"处理失败: {str(e)}",
+                "operation": "error",
+                "tasks": [],
+                "results": []
             }
 
     except Exception as e:
