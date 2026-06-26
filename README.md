@@ -15,9 +15,7 @@
 用户可直接使用自然语言指令进行交互，方便地管理自己的任务，梳理任务列表。
 > 本项目由个人开发，是学习agent过程中的实践，仅在模拟器上进行开发测试，未在真实设备上进行生产环境测验。
 > 
-> 点击[此链接](./assets/demo_reminder.mp4?raw=true)下载查看demo视频。
-
-<a href="./assets/demo_reminder.mp4" download="demo_reminder.mp4">查看demo视频</a>
+> 点击[此链接](https://github.com/DustyWoods/Reminder/releases/download/v1.0/demo_reminder.mp4)下载查看demo视频。
 
 ### 技术栈
 
@@ -44,10 +42,10 @@
 
     从[huggingface](https://huggingface.co/csukuangfj/sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20/tree/main)将以下文件下载并保存至/backend/assets/zipformer中。
 
-       - `decoder-epoch-99-avg-1.onnx`
-       - `encoder-epoch-99-avg-1.onnx`
-       - `joiner-epoch-99-avg-1.onnx`
-       - `tokens.txt`
+    - `decoder-epoch-99-avg-1.onnx`
+    - `encoder-epoch-99-avg-1.onnx`
+    - `joiner-epoch-99-avg-1.onnx`
+    - `tokens.txt`
 
 2. 后端环境
 
