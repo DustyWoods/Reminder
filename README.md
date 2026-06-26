@@ -17,7 +17,7 @@
 > 
 > 点击[此链接](./assets/demo_reminder.mp4?raw=true)下载查看demo视频。
 
-<a href="./assets/demo_reminder.mp4?raw=true" target="_blank">查看demo视频</a>
+<a href="./assets/demo_reminder.mp4" download="demo_reminder.mp4">查看demo视频</a>
 
 ### 技术栈
 
