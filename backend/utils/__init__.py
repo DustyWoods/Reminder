@@ -11,7 +11,14 @@ from .database import (
     get_user_by_id,
     user_exists,
     delete_user,
+    create_task,
+    get_tasks_by_user_id,
+    get_task_by_id,
+    update_task,
+    delete_task,
+    delete_all_tasks,
 )
+from .llm_helpers import parse_llm_json, build_llm
 
 __all__ = [
     "logger",
@@ -28,4 +35,12 @@ __all__ = [
     "get_user_by_id",
     "user_exists",
     "delete_user",
+    "create_task",
+    "get_tasks_by_user_id",
+    "get_task_by_id",
+    "update_task",
+    "delete_task",
+    "delete_all_tasks",
+    "parse_llm_json",
+    "build_llm",
 ]

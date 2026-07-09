@@ -8,7 +8,8 @@ from models import (
     VoiceStreamEndRequest,
     ReminderResponse,
 )
-from services import asr_manager, SHERPA_AVAILABLE, llm_service
+from services import asr_manager, SHERPA_AVAILABLE
+from agent import run_react_agent
 from utils import get_logger
 
 logger = get_logger(__name__)
@@ -104,7 +105,7 @@ async def process_audio_chunk(request: Request, session_id: str):
 
 
 @router.post("/stop")
-async def stop_voice_session(request: VoiceStreamEndRequest):
+async def stop_voice_session(request: VoiceStreamEndRequest, user_id: int):
     """
     停止语音识别会话，处理最终识别结果
 
@@ -148,53 +149,28 @@ async def stop_voice_session(request: VoiceStreamEndRequest):
 
         logger.info(f"Voice session ended: {request.session_id}, recognized text: {final_text}")
 
-        # 如果没有识别到文本，返回错误
-        # if not final_text or final_text.strip() == "":
-        #     return {
-        #         "session_id": request.session_id,
-        #         "error": "No speech recognized",
-        #         "text": "",
-        #         "is_final": True
-        #     }
-
-        # 使用 LLM 处理识别文本，提取任务信息
+        # 使用 ReAct Agent 处理识别文本
         try:
-            if llm_service.is_available():
-                # reminder = llm_service.extract_reminder(final_text)
-                # return {
-                #     "session_id": request.session_id,
-                #     "text": final_text,
-                #     "is_final": True,
-                #     "task": {
-                #         "title": reminder.title,
-                #         "due_date": reminder.due_date,
-                #         "description": reminder.description
-                #     }
-                # }
-                return {
-                    "session_id": request.session_id,
-                    "text": final_text,
-                    "is_final": True,
-                    "task": {
-                        "title": "测试任务",
-                        "due_date": "2022-12-12 12:00",
-                        "description": "这是一个测试任务"
-                    }
-                }
-            else:
-                return {
-                    "session_id": request.session_id,
-                    "text": final_text,
-                    "is_final": True,
-                    "error": "LLM service not available"
-                }
-        except Exception as e:
-            logger.warning(f"LLM processing failed for session {request.session_id}: {str(e)}")
+            result = await run_react_agent(final_text, user_id=user_id)
             return {
                 "session_id": request.session_id,
                 "text": final_text,
-                "is_final": True,
-                "error": f"Failed to process text into task: {str(e)}"
+                "success": result.get("success", False),
+                "summary": result.get("summary", ""),
+                "operation": result.get("operation", "create"),
+                "tasks": result.get("tasks", []),
+                "results": result.get("results", [])
+            }
+        except Exception as e:
+            logger.warning(f"ReAct Agent processing failed for session {request.session_id}: {str(e)}")
+            return {
+                "session_id": request.session_id,
+                "text": final_text,
+                "success": False,
+                "summary": f"处理失败: {str(e)}",
+                "operation": "error",
+                "tasks": [],
+                "results": []
             }
 
     except Exception as e:

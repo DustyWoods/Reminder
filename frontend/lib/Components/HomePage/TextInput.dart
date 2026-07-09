@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:reminder/Utils/ScreenSize.dart';
 import 'package:reminder/api/TextService.dart';
+import 'package:reminder/Stores/LoginManager.dart';
 
 /// 文本输入组件
 ///
@@ -54,7 +55,15 @@ class _TextInputState extends State<TextInput> {
     setState(() => _isSending = true);
     
     try {
-      final result = await TextService.getTask(text);
+      if (!loginManager.isInitialized()) {
+        await loginManager.init();
+      }
+      // 获取当前登录用户的ID
+      final userId = loginManager.getUserId();
+      final int? userIdInt = userId != null ? int.tryParse(userId) : null;
+      
+      // 调用后端接口，传递用户ID
+      final result = await TextService.processText(text, userId: userIdInt);
       _controller.clear();
       widget.onSendSuccess(result);
     } catch (e) {

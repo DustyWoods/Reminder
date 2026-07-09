@@ -1,57 +1,67 @@
-from fastapi import APIRouter, HTTPException
-import uuid
+"""
+文本任务处理路由 - ReAct Agent 版
+
+统一响应格式：
+{
+    "success": true/false,
+    "summary": "操作结果总结",
+    "operation": "create/update/delete/query/mixed",
+    "tasks": [...],
+    "results": [...]
+}
+"""
+from fastapi import APIRouter, HTTPException, Query
 
 from models import ReminderRequest
-from services import llm_service
+from agent import run_react_agent
 from utils import get_logger
 
 logger = get_logger(__name__)
 
-router = APIRouter(prefix="/api", tags=["text"])
+router = APIRouter(prefix="/api/text", tags=["text"])
 
 
-@router.post("/text")
-async def create_text_task(request: ReminderRequest):
+@router.post("", summary="智能任务处理接口（ReAct）")
+async def process_text_task(request: ReminderRequest, user_id: int = Query(1)):
     """
-    文本任务创建接口
+    智能任务处理 - 基于 ReAct 框架
 
-    接收文本，使用 LLM 提取任务信息并返回
+    支持多操作组合输入：
+    - "下午三点开会，删除遛狗提醒" → 创建+删除
+    - "把会议改到明天，取消学习计划" → 更新+删除
+    - "今天有什么任务" → 查询
+
+    示例请求: POST /api/text?user_id=1  {"text": "下午三点开会"}
     """
-    logger.info(f"Received text task request: {request.text}")
-
-    if not llm_service.is_available():
-        raise HTTPException(status_code=503, detail="LLM service not available")
+    logger.info(f"Text task from user {user_id}: {request.text}")
 
     try:
-        # 调用 LLM 服务提取任务信息
-        # reminder = llm_service.extract_reminder(request.text)
-        
-        # logger.info(f"Successfully extracted reminder: {reminder.title}")
-        
-        # 返回符合前端期望的数据结构
-        # return {
-        #     "session_id": str(uuid.uuid4()),
-        #     "text": request.text,
-        #     "is_final": True,
-        #     "task": {
-        #         "title": reminder.title,
-        #         "due_date": reminder.due_date,
-        #         "description": reminder.description
-        #     }
-        # }
-        return {
-            "session_id": str(uuid.uuid4()),
-            "text": request.text,
-            "is_final": True,
-            "task": {
-                "title": "测试任务",
-                "due_date": "2022-12-12 12:00",
-                "description": "这是一个测试任务"
-            }
-        }
+        result = await run_react_agent(request.text, user_id=user_id)
+        return _build_response(result)
     except ValueError as e:
-        logger.warning(f"Validation error: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.exception(f"Error creating reminder: {str(e)}")
+        logger.exception(f"Error processing text: {e}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@router.post("/query", summary="查询任务")
+async def query_text_task(user_id: int = Query(1)):
+    """查询用户任务"""
+    try:
+        result = await run_react_agent("查询任务", user_id=user_id)
+        return _build_response(result)
+    except Exception as e:
+        logger.exception(f"Error querying tasks: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def _build_response(result: dict) -> dict:
+    """构建统一响应格式"""
+    return {
+        "success": result.get("success", False),
+        "summary": result.get("summary", ""),
+        "operation": result.get("operation", "create"),
+        "tasks": result.get("tasks", []),
+        "results": result.get("results", [])
+    }

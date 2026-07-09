@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:typed_data';
-import 'package:dio/dio.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
 
@@ -182,8 +181,13 @@ class VoiceStreamService {
       final result = response.data as Map<String, dynamic>;
       
       // 如果有任务数据，添加到任务流
-      if (result['task'] != null) {
-        _taskStreamController.add(result['task'] as Map<String, dynamic>);
+      if (result['tasks'] != null) {
+        final tasks = result['tasks'];
+        if (tasks is List && tasks.isNotEmpty) {
+          for (var task in tasks) {
+            _taskStreamController.add(task as Map<String, dynamic>);
+          }
+        }
       }
       
       // 如果有错误，添加到错误流

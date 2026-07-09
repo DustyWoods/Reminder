@@ -1,5 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:reminder/api/AuthService.dart';
+import 'package:reminder/Stores/TaskManager.dart';
+import 'package:reminder/Viewmodels/task.dart';
 
 class LoginManager {
   final String _isLoggedInKey = 'is_logged_in';
@@ -42,6 +44,9 @@ class LoginManager {
         await _prefs.setString(_userIdKey, result['user']['id'].toString());
         await _prefs.setString(_userNameKey, result['user']['username']);
         
+        // 解析并保存后端返回的任务列表
+        await _syncTasksFromServer(result);
+        
         return true;
       } else {
         return false;
@@ -49,6 +54,25 @@ class LoginManager {
     } catch (e) {
       print('Login error: $e');
       return false;
+    }
+  }
+
+  Future<void> _syncTasksFromServer(Map<String, dynamic> loginResult) async {
+    try {
+      // 清除本地旧任务
+      await taskManager.clearTasks();
+      
+      // 获取后端返回的任务列表
+      final tasksData = loginResult['tasks'] as List?;
+      if (tasksData != null && tasksData.isNotEmpty) {
+        for (var taskJson in tasksData) {
+          Task task = Task.fromJson(taskJson);
+          await taskManager.addTask(task);
+        }
+        print('Synced ${tasksData.length} tasks from server');
+      }
+    } catch (e) {
+      print('Error syncing tasks from server: $e');
     }
   }
 

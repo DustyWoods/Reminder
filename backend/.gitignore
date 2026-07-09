@@ -1,5 +1,82 @@
+# Environment and sensitive files
+# ================================
 .env
+.env.*
+*.env
+.env.local
 
+# Agent module sensitive files
+agent/.env
+
+# Python
+# ======
 __pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
+# Virtual environments
+# ====================
+venv/
+env/
+.venv/
+ENV/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# IDE and Editor
+# ===============
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+# =======
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+
+# Logs
+# =====
+*.log
+logs/
+
+# Data files (local database, uploads, etc.)
+# =============================================
+*.db
+*.sqlite
+*.sqlite3
 assets/
+data/
+*.wav
+*.mp3
+*.pcm
+
+# LangGraph checkpoints (optional, can be large)
+# ================================================
+checkpoints/
+
+# Environment specific
+# =====================
+*.local

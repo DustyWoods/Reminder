@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 from config import settings
 from utils import setup_logging, get_logger
-from routers import text_router, voice_router, auth_router
+from routers import text_router, voice_router, auth_router, task_router
 from services import SHERPA_AVAILABLE
 
 # 加载环境变量
@@ -46,6 +46,7 @@ app = FastAPI(
 app.include_router(auth_router)
 app.include_router(text_router)
 app.include_router(voice_router)
+app.include_router(task_router)
 
 
 @app.get("/")
