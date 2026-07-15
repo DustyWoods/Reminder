@@ -98,6 +98,8 @@ class LoginManager {
     await _prefs.remove(_userIdKey);
     await _prefs.remove(_userNameKey);
     
+    taskManager.reset();
+    
     return userId;
   }
 }
