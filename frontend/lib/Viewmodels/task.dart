@@ -43,4 +43,9 @@ class Task {
       'id': id,
     };
   }
+
+  bool isDailyTask() {
+    final time = dueDate['time'] ?? '';
+    return time.isEmpty || time == '23:59';
+  }
 }

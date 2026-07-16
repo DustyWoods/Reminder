@@ -20,15 +20,15 @@ class MainContent extends StatelessWidget {
   /// 任务列表
   final List<Task> tasks;
 
-  /// 删除任务回调
-  final Function(int) onDelete;
+  /// 删除任务回调（接收任务ID）
+  final Function(int) onDeleteTask;
 
   const MainContent({
     super.key,
     required this.onLogoutSuccess,
     required this.isInitialized,
     required this.tasks,
-    required this.onDelete,
+    required this.onDeleteTask,
   });
 
   @override
@@ -53,7 +53,7 @@ class MainContent extends StatelessWidget {
             SizedBox(
               height: ScreenSize.getHeight(context) * 0.65,
               child: isInitialized
-                ? TaskBar(tasks: tasks, onDelete: onDelete)
+                ? TaskBar(tasks: tasks, onDeleteTask: onDeleteTask)
                 : const Center(child: CircularProgressIndicator()),
             ),
           ],

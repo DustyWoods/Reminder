@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:reminder/Components/HomePage/MainContent.dart';
 import 'package:reminder/Components/HomePage/LoadingView.dart';
 import 'package:reminder/Components/HomePage/UnauthenticatedView.dart';
@@ -10,6 +11,7 @@ import 'package:reminder/Constants/main.dart';
 import 'package:reminder/Stores/TaskManager.dart';
 import 'package:reminder/Stores/LoginManager.dart';
 import 'package:reminder/Viewmodels/task.dart';
+import 'package:reminder/Services/NotificationService.dart';
 
 /// 主页面组件
 /// 
@@ -39,8 +41,8 @@ class _HomePageState extends State<HomePage> {
   // 当前输入模式：语音输入 / 文本输入
   bool _inputFlag = HomePageConstants.TEXT_INPUT;
   
-  // 任务列表
-  List<Task> _tasks = [];
+  // 今日任务列表（已筛选和排序）
+  List<Task> _todayTasks = [];
 
   @override
   void initState() {
@@ -50,25 +52,63 @@ class _HomePageState extends State<HomePage> {
 
   /// 初始化应用
   Future<void> _initializeApp() async {
-    // 初始化登录管理器
-    await loginManager.init();
+    print('Initialization started');
     
-    // 检查登录状态
-    _isLoggedIn = loginManager.isLoggedIn();
-    
-    // 如果已登录，初始化任务管理器
-    if (_isLoggedIn) {
-      await taskManager.init();
-      _tasks = taskManager.getTasks();
+    try {
+      print('Step 1: loginManager.init()');
+      await loginManager.init();
+      print('Step 1 done');
+      
+      print('Step 2: notificationService.init()');
+      await notificationService.init();
+      print('Step 2 done');
+      
+      print('Step 3: _requestNotificationPermission()');
+      await _requestNotificationPermission();
+      print('Step 3 done');
+      
+      print('Step 4: check login status');
+      _isLoggedIn = loginManager.isLoggedIn();
+      print('Login status: $_isLoggedIn');
+      
+      if (_isLoggedIn) {
+        print('Step 5: taskManager.init()');
+        await taskManager.init();
+        print('Step 5 done');
+        
+        print('Step 6: getTodayTasks()');
+        _todayTasks = taskManager.getTodayTasks();
+        print('Today tasks count: ${_todayTasks.length}');
+        
+        print('Step 7: scheduleNotificationsForToday()');
+        await notificationService.scheduleNotificationsForToday();
+        print('Step 7 done');
+      }
+    } catch (e, stackTrace) {
+      print('Initialization error: $e');
+      print('Stack trace: $stackTrace');
+    } finally {
+      print('Setting _isInitialized = true');
+      if (mounted) {
+        setState(() => _isInitialized = true);
+      }
+      print('Initialization finished');
     }
-    
-    if (mounted) {
-      setState(() => _isInitialized = true);
+  }
+
+  /// 请求通知权限
+  Future<void> _requestNotificationPermission() async {
+    final status = await Permission.notification.request();
+    if (status.isGranted) {
+      print('Notification permission granted');
+    } else {
+      print('Notification permission denied');
     }
   }
 
   /// 登录成功回调
   void _onLoginSuccess() {
+    taskManager.reset();
     setState(() {
       _isLoggedIn = true;
       _isInitialized = false;
@@ -79,9 +119,10 @@ class _HomePageState extends State<HomePage> {
 
   /// 退出登录成功回调
   void _onLogoutSuccess() {
+    taskManager.reset();
     setState(() {
       _isLoggedIn = false;
-      _tasks = [];
+      _todayTasks = [];
     });
   }
 
@@ -117,8 +158,8 @@ class _HomePageState extends State<HomePage> {
         MainContent(
           onLogoutSuccess: _onLogoutSuccess,
           isInitialized: _isInitialized,
-          tasks: _tasks,
-          onDelete: _handleDelete,
+          tasks: _todayTasks,
+          onDeleteTask: _handleDeleteTask,
         ),
 
         _onVoiceInputing ? const VoiceMask() : Container(),
@@ -163,25 +204,34 @@ class _HomePageState extends State<HomePage> {
 
     print('Operation: $operation, Success: $success, Summary: $summary');
 
+    Future<void> updateUI() async {
+      if (mounted) {
+        setState(() => _todayTasks = taskManager.getTodayTasks());
+      }
+      await notificationService.scheduleNotificationsForToday();
+    }
+
     final tasksData = result['tasks'];
     if (tasksData is List && tasksData.isNotEmpty) {
       if (operation == 'mixed') {
-        taskManager.refreshTasks().then((_) {
-          if (mounted) setState(() => _tasks = taskManager.getTasks());
-        }).catchError((e) => print('Error refreshing tasks: $e'));
+        taskManager.refreshTasks().then((_) => updateUI()).catchError((e) {
+          print('Error refreshing tasks: $e');
+          return null;
+        });
       } else {
         taskManager.syncTasksFromServer(operation, tasksData).then((syncSuccess) {
-          if (syncSuccess && mounted) {
-            setState(() => _tasks = taskManager.getTasks());
-          }
-        }).catchError((e) => print('Error syncing tasks: $e'));
+          if (syncSuccess) updateUI();
+        }).catchError((e) {
+          print('Error syncing tasks: $e');
+          return null;
+        });
       }
     } else {
-      // 没有 tasks 数据但操作成功（如删除），刷新本地数据
       if (success && (operation == 'delete' || operation == 'update' || operation == 'mixed')) {
-        taskManager.refreshTasks().then((_) {
-          if (mounted) setState(() => _tasks = taskManager.getTasks());
-        }).catchError((e) => print('Error refreshing tasks: $e'));
+        taskManager.refreshTasks().then((_) => updateUI()).catchError((e) {
+          print('Error refreshing tasks: $e');
+          return null;
+        });
       }
     }
   }
@@ -196,12 +246,13 @@ class _HomePageState extends State<HomePage> {
     print('文本发送失败: $error');
   }
 
-  /// 删除任务
-  void _handleDelete(int index) {
-    taskManager.removeTask(index).then((_) {
+  /// 删除任务（根据任务ID）
+  void _handleDeleteTask(int taskId) {
+    taskManager.removeTaskById(taskId).then((_) {
       setState(() {
-        _tasks = taskManager.getTasks();
+        _todayTasks = taskManager.getTodayTasks();
       });
+      notificationService.scheduleNotificationsForToday();
     });
   }
 

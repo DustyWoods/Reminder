@@ -6,8 +6,8 @@ import 'package:reminder/Utils/ScreenSize.dart';
 
 class TaskBar extends StatelessWidget {
   final List<Task> tasks;
-  final Function(int) onDelete;
-  const TaskBar({super.key, required this.tasks, required this.onDelete});
+  final Function(int) onDeleteTask;
+  const TaskBar({super.key, required this.tasks, required this.onDeleteTask});
 
   @override
   Widget build(BuildContext context) {
@@ -74,9 +74,9 @@ class TaskBar extends StatelessWidget {
                   ),
                   Expanded(
                     child: TaskCard(
-                      key: Key(DateTime.now().millisecondsSinceEpoch.toString() + '_index'),
+                      key: Key('task_${tasks[index].id}_${tasks[index].title}'),
                       task: tasks[index], 
-                      onDelete: () => onDelete(index),
+                      onDelete: () => onDeleteTask(tasks[index].id ?? -1),
                     ),
                   ),
                 ],

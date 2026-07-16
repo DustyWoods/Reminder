@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:reminder/Constants/main.dart';
 import 'package:reminder/Viewmodels/task.dart';
@@ -37,6 +38,11 @@ class TaskManager {
   
   bool isInitialized() => _isInitialized;
 
+  void reset() {
+    _isInitialized = false;
+    _tasks = [];
+  }
+
   Future<void> _saveSingleTask(int index, Task task) async {
     if (!_isInitialized) await init();
     
@@ -57,6 +63,28 @@ class TaskManager {
 
   List<Task> getTasks() {
     return _tasks;
+  }
+
+  String _getTodayDateString() {
+    return DateFormat('yyyy-MM-dd').format(DateTime.now());
+  }
+
+  bool _isTodayTask(Task task) {
+    final taskDate = task.dueDate['date'] ?? '';
+    if (taskDate.isEmpty) return false;
+    return taskDate == _getTodayDateString();
+  }
+
+  List<Task> getTodayTasks() {
+    final todayTasks = _tasks.where(_isTodayTask).toList();
+    todayTasks.sort((a, b) {
+      final timeA = a.dueDate['time'] ?? '';
+      final timeB = b.dueDate['time'] ?? '';
+      if (timeA.isEmpty) return 1;
+      if (timeB.isEmpty) return -1;
+      return timeA.compareTo(timeB);
+    });
+    return todayTasks;
   }
 
   int getTaskCount() {
