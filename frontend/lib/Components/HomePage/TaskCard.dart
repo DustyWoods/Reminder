@@ -123,6 +123,7 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
+    final isExpired = widget.task.isExpired();
     return LayoutBuilder(
       builder: (context, constraints) {
         _cardWidth = constraints.maxWidth;
@@ -168,11 +169,11 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
                     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     height: double.infinity,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: isExpired ? const Color(0xFFF5F5F5) : Colors.white,
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.grey.withValues(alpha: 0.1),
+                          color: Colors.grey.withValues(alpha: isExpired ? 0.05 : 0.1),
                           spreadRadius: 0,
                           blurRadius: 10,
                           offset: const Offset(0, 2),
@@ -183,20 +184,39 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text(
-                          widget.task.title,
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
+                        Expanded(
+                          child: Text(
+                            widget.task.title,
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: isExpired ? Colors.grey[500] : Colors.black,
+                              decoration: isExpired ? TextDecoration.lineThrough : null,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        Text(
-                          widget.task.dueDate['time'] ?? '',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[1000],
-                          ),
+                        const SizedBox(width: 12),
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              widget.task.dueDate['time'] ?? '',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: isExpired ? Colors.grey[400] : Colors.grey[1000],
+                              ),
+                            ),
+                            if (isExpired)
+                              Text(
+                                '已结束',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[400],
+                                ),
+                              ),
+                          ],
                         ),
                       ],
                     ),

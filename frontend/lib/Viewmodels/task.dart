@@ -48,4 +48,36 @@ class Task {
     final time = dueDate['time'] ?? '';
     return time.isEmpty || time == '23:59';
   }
+
+  bool isExpired() {
+    final dateStr = dueDate['date'] ?? '';
+    if (dateStr.isEmpty) return false;
+    
+    final today = DateTime.now();
+    final dateParts = dateStr.split('-');
+    if (dateParts.length != 3) return false;
+    
+    try {
+      final year = int.parse(dateParts[0]);
+      final month = int.parse(dateParts[1]);
+      final day = int.parse(dateParts[2]);
+      final taskDate = DateTime(year, month, day);
+      
+      final timeStr = dueDate['time'] ?? '';
+      if (timeStr.isEmpty) {
+        return taskDate.isBefore(today);
+      }
+      
+      final timeParts = timeStr.split(':');
+      if (timeParts.length != 2) return taskDate.isBefore(today);
+      
+      final hour = int.parse(timeParts[0]);
+      final minute = int.parse(timeParts[1]);
+      final taskDateTime = DateTime(year, month, day, hour, minute);
+      
+      return taskDateTime.isBefore(today);
+    } catch (_) {
+      return false;
+    }
+  }
 }
