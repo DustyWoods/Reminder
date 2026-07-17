@@ -5,6 +5,7 @@ import 'package:reminder/Components/CalendarPage/SelectorBar.dart';
 import 'package:reminder/Constants/main.dart';
 import 'package:reminder/Utils/ScreenSize.dart';
 import 'package:reminder/Components/CalendarPage/ScheduleView.dart';
+import 'package:reminder/Components/CalendarPage/ScheduleLogo.dart';
 
 class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
@@ -56,8 +57,9 @@ class _CalendarPageState extends State<CalendarPage> {
           color: Colors.white,
           child: Column(
             children: [
-              Label(height: screenHeight * 0.08, year: year, month: month, day: day),
-              SelectorBar(width: ScreenSize.getWidth(context), height: screenHeight * 0.06, currentOption: currentView, onChange: _changeView),
+              // Label(height: screenHeight * 0.08, year: year, month: month, day: day),
+              // SelectorBar(width: ScreenSize.getWidth(context), height: screenHeight * 0.06, currentOption: currentView, onChange: _changeView),
+              ScheduleLogo(height: screenHeight * 0.14),
               Container(
                 height: screenHeight * 0.65,
                 width: ScreenSize.getWidth(context),
