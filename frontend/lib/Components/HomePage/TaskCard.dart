@@ -1,7 +1,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:reminder/Viewmodels/task.dart';
-import 'package:reminder/Utils/ScreenSize.dart';
 
 class TaskCard extends StatefulWidget {
   const TaskCard({super.key, required this.task, required this.onDelete});
@@ -22,6 +21,7 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
   final double _deleteThreshold = 120;
   final double _maxOffset = 180;
   final double _resistanceFactor = 0.7;
+  double _cardWidth = 0;
 
   @override
   void initState() {
@@ -98,9 +98,7 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
   void _animateToDelete() {
     final currentOffset = _offsetX;
     _controller.reset();
-    final screenWidth = ScreenSize.getWidth(context);
-    final cardWidth = screenWidth * 0.8;
-    final endOffset = cardWidth + 100;
+    final endOffset = _cardWidth + 100;
     _offsetAnimation = _controller.drive(
       Tween<double>(begin: currentOffset, end: endOffset).chain(
         CurveTween(curve: Curves.easeIn),
@@ -125,85 +123,90 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Positioned(
-          left: 0,
-          right: 0,
-          top: 0,
-          bottom: 0,
-          child: AnimatedOpacity(
-            opacity: _deleteIconOpacity,
-            duration: const Duration(milliseconds: 150),
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.red,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              alignment: Alignment.centerLeft,
-              padding: const EdgeInsets.only(left: 32),
-              child: const Icon(
-                Icons.delete,
-                color: Colors.white,
-                size: 28,
-              ),
-            ),
-          ),
-        ),
-        GestureDetector(
-          onPanStart: _onPanStart,
-          onPanUpdate: _onPanUpdate,
-          onPanEnd: _onPanEnd,
-          child: Transform(
-            transform: Matrix4.translationValues(_offsetX, 0, 0)
-              ..scale(_scale, _scale),
-            alignment: Alignment.center,
-            child: AnimatedOpacity(
-              opacity: _opacity,
-              duration: const Duration(milliseconds: 150),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                height: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withValues(alpha: 0.1),
-                      spreadRadius: 0,
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      widget.task.title,
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                    Text(
-                      widget.task.dueDate['time'] ?? '',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[1000],
-                      ),
-                    ),
-                  ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        _cardWidth = constraints.maxWidth;
+        return Stack(
+          children: [
+            Positioned(
+              left: 0,
+              right: 0,
+              top: 0,
+              bottom: 0,
+              child: AnimatedOpacity(
+                opacity: _deleteIconOpacity,
+                duration: const Duration(milliseconds: 150),
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  alignment: Alignment.centerLeft,
+                  padding: const EdgeInsets.only(left: 32),
+                  child: const Icon(
+                    Icons.delete,
+                    color: Colors.white,
+                    size: 28,
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
-      ],
+            GestureDetector(
+              onPanStart: _onPanStart,
+              onPanUpdate: _onPanUpdate,
+              onPanEnd: _onPanEnd,
+              child: Transform(
+                transform: Matrix4.translationValues(_offsetX, 0, 0)
+                  ..scale(_scale, _scale),
+                alignment: Alignment.center,
+                child: AnimatedOpacity(
+                  opacity: _opacity,
+                  duration: const Duration(milliseconds: 150),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    height: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withValues(alpha: 0.1),
+                          spreadRadius: 0,
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          widget.task.title,
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                        Text(
+                          widget.task.dueDate['time'] ?? '',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey[1000],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

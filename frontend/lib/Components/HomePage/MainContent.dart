@@ -23,12 +23,16 @@ class MainContent extends StatelessWidget {
   /// 删除任务回调（接收任务ID）
   final Function(int) onDeleteTask;
 
+  /// 从日历返回时的刷新回调
+  final VoidCallback? onCalendarBack;
+
   const MainContent({
     super.key,
     required this.onLogoutSuccess,
     required this.isInitialized,
     required this.tasks,
     required this.onDeleteTask,
+    this.onCalendarBack,
   });
 
   @override
@@ -42,7 +46,7 @@ class MainContent extends StatelessWidget {
           children: [
             SizedBox(
               height: 50,
-              child: HeadBar(onLogoutSuccess: onLogoutSuccess),
+              child: HeadBar(onLogoutSuccess: onLogoutSuccess, onCalendarBack: onCalendarBack),
             ),
             // 问候语区域
             SizedBox(

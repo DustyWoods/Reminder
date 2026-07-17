@@ -126,6 +126,14 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  /// 从日历页面返回时刷新任务列表
+  void _onCalendarBack() {
+    setState(() {
+      _todayTasks = taskManager.getTodayTasks();
+    });
+    notificationService.scheduleNotificationsForToday();
+  }
+  
   
 
   @override
@@ -160,6 +168,7 @@ class _HomePageState extends State<HomePage> {
           isInitialized: _isInitialized,
           tasks: _todayTasks,
           onDeleteTask: _handleDeleteTask,
+          onCalendarBack: _onCalendarBack,
         ),
 
         _onVoiceInputing ? const VoiceMask() : Container(),

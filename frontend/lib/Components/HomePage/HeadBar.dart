@@ -6,8 +6,9 @@ import 'package:reminder/api/AuthService.dart';
 
 class HeadBar extends StatelessWidget {
   final VoidCallback? onLogoutSuccess;
+  final VoidCallback? onCalendarBack;
 
-  const HeadBar({super.key, this.onLogoutSuccess});
+  const HeadBar({super.key, this.onLogoutSuccess, this.onCalendarBack});
 
   void _showUserMenu(BuildContext context) {
     showMenu(
@@ -133,7 +134,10 @@ class HeadBar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           GestureDetector(
-            onTap: () => Navigator.pushNamed(context, '/calendar'),
+            onTap: () async {
+              await Navigator.pushNamed(context, '/calendar');
+              onCalendarBack?.call();
+            },
             child: Container(
               margin: const EdgeInsets.only(left: 20),
               child: const Icon(
